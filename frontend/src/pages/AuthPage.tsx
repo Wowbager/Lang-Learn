@@ -4,6 +4,7 @@
 
 import React, { useState } from 'react';
 import { Box, Container, Tabs, Tab } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
 
@@ -31,6 +32,7 @@ function TabPanel(props: TabPanelProps) {
 
 export const AuthPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
+  const navigate = useNavigate();
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -38,6 +40,31 @@ export const AuthPage: React.FC = () => {
 
   const switchToLogin = () => setTabValue(0);
   const switchToRegister = () => setTabValue(1);
+
+  const handleLoginSuccess = () => {
+    // Navigate to intended page or stay on current base URL
+    const redirectTo = localStorage.getItem('redirectAfterLogin');
+    localStorage.removeItem('redirectAfterLogin');
+    
+    if (redirectTo && redirectTo !== '/auth') {
+      navigate(redirectTo, { replace: true });
+    } else {
+      // Stay on the base URL or go to dashboard only if specifically requested
+      navigate('/', { replace: true });
+    }
+  };
+
+  const handleRegistrationSuccess = () => {
+    // Same logic for registration
+    const redirectTo = localStorage.getItem('redirectAfterLogin');
+    localStorage.removeItem('redirectAfterLogin');
+    
+    if (redirectTo && redirectTo !== '/auth') {
+      navigate(redirectTo, { replace: true });
+    } else {
+      navigate('/', { replace: true });
+    }
+  };
 
   return (
     <Container maxWidth="sm" sx={{ py: 4 }}>
@@ -60,7 +87,9 @@ export const AuthPage: React.FC = () => {
             // Handle successful login (redirect to intended page or dashboard)
             const redirectTo = localStorage.getItem('redirectAfterLogin') || '/dashboard';
             localStorage.removeItem('redirectAfterLogin');
-            window.location.href = redirectTo;
+            const domain = process.env.REACT_APP_DOMAIN || 't.lrnm.eu';
+            const protocol = domain.includes('localhost') ? 'http://' : 'https://';
+            window.location.href = `${protocol}${domain}${redirectTo}`;
           }}
         />
       </TabPanel>
@@ -72,7 +101,9 @@ export const AuthPage: React.FC = () => {
             // Handle successful registration (redirect to intended page or dashboard)
             const redirectTo = localStorage.getItem('redirectAfterLogin') || '/dashboard';
             localStorage.removeItem('redirectAfterLogin');
-            window.location.href = redirectTo;
+            const domain = process.env.REACT_APP_DOMAIN || 't.lrnm.eu';
+            const protocol = domain.includes('localhost') ? 'http://' : 'https://';
+            window.location.href = `${protocol}${domain}${redirectTo}`;
           }}
         />
       </TabPanel>

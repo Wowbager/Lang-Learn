@@ -10,7 +10,7 @@ from models.pydantic_models import (
     UserCreate, UserUpdate, UserResponse, Token
 )
 from services.auth_service import AuthService
-from auth.dependencies import get_current_active_user
+from auth.dependencies import get_current_active_user, get_current_user
 from models.database_models import User
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -147,3 +147,8 @@ async def deactivate_current_user(
         )
     
     return {"message": "Account deactivated successfully"}
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_debug(current_user: User = Depends(get_current_user)):
+    """Debug endpoint to check current user authentication."""
+    return UserResponse.from_orm(current_user)

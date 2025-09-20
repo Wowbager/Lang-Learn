@@ -1,4 +1,4 @@
-import { authService } from './authService';
+import apiClient from './apiClient';
 import { 
   ClassData, 
   Permission, 
@@ -9,82 +9,52 @@ import {
 } from '../types/collaboration';
 
 class CollaborationService {
-  private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = authService.getToken();
-    
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ detail: 'An error occurred' }));
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
   // Class management
   async createClass(classData: ClassCreateRequest): Promise<ClassData> {
-    return this.request<ClassData>('/api/collaboration/classes', {
-      method: 'POST',
-      body: JSON.stringify(classData),
-    });
+    const response = await apiClient.post('/collaboration/classes', classData);
+    return response.data;
   }
 
   async getUserClasses(): Promise<ClassData[]> {
-    return this.request<ClassData[]>('/api/collaboration/classes');
+    const response = await apiClient.get('/collaboration/classes');
+    return response.data;
   }
 
   async getClass(classId: string): Promise<ClassData> {
-    return this.request<ClassData>(`/api/collaboration/classes/${classId}`);
+    const response = await apiClient.get(`/collaboration/classes/${classId}`);
+    return response.data;
   }
 
   async updateClass(classId: string, updates: ClassUpdateRequest): Promise<ClassData> {
-    return this.request<ClassData>(`/api/collaboration/classes/${classId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
+    const response = await apiClient.put(`/collaboration/classes/${classId}`, updates);
+    return response.data;
   }
 
   async deleteClass(classId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/collaboration/classes/${classId}`, {
-      method: 'DELETE',
-    });
+    const response = await apiClient.delete(`/collaboration/classes/${classId}`);
+    return response.data;
   }
 
   // Student enrollment
   async joinClass(inviteCode: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>('/api/collaboration/classes/join', {
-      method: 'POST',
-      body: JSON.stringify({ invite_code: inviteCode }),
-    });
+    const response = await apiClient.post('/collaboration/classes/join', { invite_code: inviteCode });
+    return response.data;
   }
 
   async removeStudent(classId: string, studentId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/collaboration/classes/${classId}/students/${studentId}`, {
-      method: 'DELETE',
-    });
+    const response = await apiClient.delete(`/collaboration/classes/${classId}/students/${studentId}`);
+    return response.data;
   }
 
   // Content sharing
   async shareContentWithClass(classId: string, learningSetId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/collaboration/classes/${classId}/share/${learningSetId}`, {
-      method: 'POST',
-    });
+    const response = await apiClient.post(`/collaboration/classes/${classId}/share/${learningSetId}`);
+    return response.data;
   }
 
   async unshareContentFromClass(classId: string, learningSetId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/collaboration/classes/${classId}/share/${learningSetId}`, {
-      method: 'DELETE',
-    });
+    const response = await apiClient.delete(`/collaboration/classes/${classId}/share/${learningSetId}`);
+    return response.data;
   }
 
   // Permission management
@@ -95,25 +65,24 @@ class CollaborationService {
       role
     };
     
-    return this.request<Permission>('/api/collaboration/permissions', {
-      method: 'POST',
-      body: JSON.stringify(permissionData),
-    });
+    const response = await apiClient.post('/collaboration/permissions', permissionData);
+    return response.data;
   }
 
   async getLearningSetPermissions(learningSetId: string): Promise<Permission[]> {
-    return this.request<Permission[]>(`/api/collaboration/permissions/learning-set/${learningSetId}`);
+    const response = await apiClient.get(`/collaboration/permissions/learning-set/${learningSetId}`);
+    return response.data;
   }
 
   async revokePermission(permissionId: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/api/collaboration/permissions/${permissionId}`, {
-      method: 'DELETE',
-    });
+    const response = await apiClient.delete(`/collaboration/permissions/${permissionId}`);
+    return response.data;
   }
 
   // Shared content
   async getSharedContent(): Promise<SharedContent[]> {
-    return this.request<SharedContent[]>('/api/collaboration/shared-content');
+    const response = await apiClient.get('/collaboration/shared-content');
+    return response.data;
   }
 }
 

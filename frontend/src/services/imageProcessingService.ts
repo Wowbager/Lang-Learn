@@ -2,7 +2,7 @@
  * Service for handling image processing API calls
  */
 
-import { authService } from './authService';
+import apiClient from './apiClient';
 
 export interface ExtractedVocabularyItem {
   word: string;
@@ -57,8 +57,6 @@ export interface SaveContentRequest {
 }
 
 class ImageProcessingService {
-  private baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-
   /**
    * Upload and process an image
    */
@@ -66,40 +64,21 @@ class ImageProcessingService {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${this.baseUrl}/api/image-processing/upload`, {
-      method: 'POST',
+    const response = await apiClient.post('/image-processing/upload', formData, {
       headers: {
-        'Authorization': `Bearer ${authService.getToken()}`,
+        'Content-Type': 'multipart/form-data',
       },
-      body: formData,
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to process image');
-    }
-
-    return response.json();
+    return response.data;
   }
 
   /**
    * Reprocess a previously uploaded image
    */
   async reprocessImage(fileId: string): Promise<ImageProcessingResult> {
-    const response = await fetch(`${this.baseUrl}/api/image-processing/reprocess/${fileId}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authService.getToken()}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to reprocess image');
-    }
-
-    return response.json();
+    const response = await apiClient.post(`/image-processing/reprocess/${fileId}`);
+    return response.data;
   }
 
   /**
@@ -111,37 +90,20 @@ class ImageProcessingService {
     formData.append('vocabulary_items', JSON.stringify(request.vocabulary_items));
     formData.append('grammar_topics', JSON.stringify(request.grammar_topics));
 
-    const response = await fetch(`${this.baseUrl}/api/image-processing/save-to-learning-set`, {
-      method: 'POST',
+    const response = await apiClient.post('/image-processing/save-to-learning-set', formData, {
       headers: {
-        'Authorization': `Bearer ${authService.getToken()}`,
+        'Content-Type': 'multipart/form-data',
       },
-      body: formData,
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to save content');
-    }
-
-    return response.json();
+    return response.data;
   }
 
   /**
    * Clean up a temporary file
    */
   async cleanupFile(fileId: string): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/api/image-processing/cleanup/${fileId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${authService.getToken()}`,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to cleanup file');
-    }
+    await apiClient.delete(`/image-processing/cleanup/${fileId}`);
   }
 
   /**

@@ -82,11 +82,15 @@ function App() {
                 }
               />
               
-              {/* Default redirect */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              {/* Default routes - show dashboard for authenticated users, auth for non-authenticated */}
+              <Route path="/" element={
+                <ProtectedRoute redirectTo="/auth">
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
               
-              {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              {/* Catch all route - redirect to home */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </Router>

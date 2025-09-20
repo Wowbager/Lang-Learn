@@ -47,17 +47,6 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
 
-@app.get("/auth/me")
-async def get_current_user_debug(current_user: User = Depends(get_current_user)):
-    """Debug endpoint to check current user authentication."""
-    return {
-        "id": current_user.id,
-        "username": current_user.username,
-        "email": current_user.email,
-        "role": current_user.role.value,
-        "is_active": current_user.is_active
-    }
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
