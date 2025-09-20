@@ -1,0 +1,53 @@
+# Environment files
+.env
+backend/.env
+frontend/.env
+
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build outputs
+frontend/build/
+backend/dist/
+*.egg-info/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# Uploads (keep directory structure but ignore files)
+uploads/*
+!uploads/.gitkeep
+
+# Docker
+.docker/
+
+# SSL certificates
+letsencrypt/
+
+# Coverage reports
+coverage/
+.coverage
+.pytest_cache/
+
+# Temporary files
+*.tmp
+*.temp

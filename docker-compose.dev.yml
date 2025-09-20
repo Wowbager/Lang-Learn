@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Development override for frontend with hot reload
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000/ws
+      - CHOKIDAR_USEPOLLING=true
+    labels:
+      - "traefik.enable=false"
+
+  # Development override for backend with hot reload
+  backend:
+    build:
+      context: ./backend
+      target: development
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+    labels:
+      - "traefik.enable=false"
+
+  # Disable Traefik in development
+  traefik:
+    profiles:
+      - production
