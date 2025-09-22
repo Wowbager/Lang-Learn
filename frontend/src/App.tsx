@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { AuthPage } from './pages/AuthPage';
 import { ContentPage } from './pages/ContentPage';
 import { CollaborationPage } from './pages/CollaborationPage';
+import DashboardPage from './pages/DashboardPage';
 import { ProfileForm } from './components/auth/ProfileForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
@@ -13,14 +14,7 @@ import { UserRole } from './types/auth';
 import { theme } from './theme';
 import './App.css';
 
-// Temporary dashboard component
-const Dashboard: React.FC = () => (
-  <Box sx={{ p: 3 }}>
-    <h1>Language Learning Chat Dashboard</h1>
-    <p>Welcome to your learning dashboard!</p>
-    <p>This is a protected area that requires authentication.</p>
-  </Box>
-);
+
 
 // Wrapper component for protected routes with layout
 const ProtectedRouteWithLayout: React.FC<{
@@ -51,7 +45,7 @@ function App() {
                 path="/dashboard"
                 element={
                   <ProtectedRouteWithLayout>
-                    <Dashboard />
+                    <DashboardPage />
                   </ProtectedRouteWithLayout>
                 }
               />
@@ -99,7 +93,7 @@ function App() {
               {/* Default routes - show dashboard for authenticated users, auth for non-authenticated */}
               <Route path="/" element={
                 <ProtectedRouteWithLayout redirectTo="/auth">
-                  <Dashboard />
+                  <DashboardPage />
                 </ProtectedRouteWithLayout>
               } />
               

@@ -35,18 +35,15 @@ server {
   server_name _;
   root /usr/share/nginx/html;
 
-  # Serve static first, then SPA fallback
+  # No cache anywhere (good for debugging)
   location / {
+    add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
     try_files $uri /index.html;
   }
-
-  # Cache built assets aggressively (optional)
-  location ~* \.(?:js|css|woff2?|ttf|eot|svg)$ {
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-    try_files $uri =404;
-  }
 }
+
 NGINX
 EOF
 

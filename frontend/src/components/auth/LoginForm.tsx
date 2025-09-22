@@ -86,7 +86,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       </Typography>
       
       <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-        Welcome back to Language Learning Chat
+        Welcome back to Language Learning Chat App! Please sign in to continue.
       </Typography>
 
       {error && (

@@ -131,9 +131,19 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         }),
       }}
     >
-      <Toolbar>
-        {/* Mobile menu button */}
-        {showMenuButton && isMobile && (
+      <Toolbar
+        sx={{
+          minHeight: '64px !important',
+          '@media (min-width:0px)': {
+            minHeight: '64px',
+          },
+          '@media (min-width:600px)': {
+            minHeight: '64px',
+          },
+        }}
+      >
+        {/* Menu button - always visible */}
+        {showMenuButton && (
           <IconButton
             color="inherit"
             aria-label="open navigation menu"
@@ -184,41 +194,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           )}
         </Box>
 
-        {/* Desktop navigation */}
-        {!isMobile && user && (
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-            {getFilteredNavigationItems().map((item) => (
-              <Button
-                key={item.path}
-                color="inherit"
-                startIcon={item.icon}
-                onClick={() => handleNavigationClick(item.path)}
-                sx={{
-                  mx: 0.5,
-                  px: 2,
-                  py: 1,
-                  borderRadius: theme.shape.borderRadius,
-                  transition: theme.transitions.create(['background-color', 'transform'], {
-                    easing: theme.transitions.easing.sharp,
-                    duration: theme.transitions.duration.short,
-                  }),
-                  backgroundColor: isActivePage(item.path) 
-                    ? 'rgba(255, 255, 255, 0.2)' 
-                    : 'transparent',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    transform: 'translateY(-1px)',
-                  },
-                  '&:active': {
-                    transform: 'translateY(0)',
-                  },
-                }}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </Box>
-        )}
+
 
         {/* User info and profile menu */}
         {user && (

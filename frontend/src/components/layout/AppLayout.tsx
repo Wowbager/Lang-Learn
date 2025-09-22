@@ -1,16 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import {
   Box,
-  Container,
   useTheme,
-  useMediaQuery,
   Drawer,
   Toolbar,
   IconButton,
-  Typography,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { AppHeader } from './AppHeader';
+import { Navigation } from './Navigation';
 
 export interface AppLayoutProps {
   children: React.ReactNode;
@@ -25,11 +23,9 @@ interface LayoutState {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
   children,
-  title = 'Language Learning Chat',
   showNavigation = true,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   // Layout state management
   const [layoutState, setLayoutState] = useState<LayoutState>({
@@ -53,7 +49,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     }));
   }, []);
 
-  // Drawer width for desktop navigation
+  // Drawer width for navigation
   const drawerWidth = 280;
 
   return (
@@ -66,14 +62,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         />
       )}
 
-      {/* Navigation Drawer */}
+      {/* Navigation Drawer - Always temporary (hamburger menu) */}
       {showNavigation && (
         <Drawer
-          variant={isMobile ? 'temporary' : 'permanent'}
-          open={isMobile ? layoutState.sidebarOpen : true}
+          variant="temporary"
+          open={layoutState.sidebarOpen}
           onClose={handleSidebarClose}
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile
+            keepMounted: true, // Better open performance
           }}
           sx={{
             width: drawerWidth,
@@ -83,9 +79,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               boxSizing: 'border-box',
               backgroundColor: theme.custom.colors.background.elevated,
               borderRight: `1px solid ${theme.palette.divider}`,
-              ...(isMobile && {
-                backgroundColor: theme.custom.colors.background.elevated,
-              }),
             },
           }}
         >
@@ -94,33 +87,25 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             sx={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: isMobile ? 'flex-end' : 'center',
+              justifyContent: 'flex-end',
               px: theme.spacing(1),
               minHeight: '64px !important',
             }}
           >
-            {isMobile && (
-              <IconButton
-                onClick={handleSidebarClose}
-                aria-label="close navigation menu"
-              >
-                <CloseIcon />
-              </IconButton>
-            )}
+            <IconButton
+              onClick={handleSidebarClose}
+              aria-label="close navigation menu"
+            >
+              <CloseIcon />
+            </IconButton>
           </Toolbar>
           
-          {/* Navigation content will be added in future tasks */}
-          <Box
-            sx={{
-              p: theme.spacing(2),
-              color: theme.palette.text.secondary,
-              textAlign: 'center',
-            }}
-          >
-            <Typography variant="body2">
-              Navigation menu will be implemented in the next task
-            </Typography>
-          </Box>
+          {/* Navigation Component */}
+          <Navigation
+            variant="mobile"
+            onItemClick={handleSidebarClose}
+            showBreadcrumbs={true}
+          />
         </Drawer>
       )}
 
@@ -132,31 +117,35 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           display: 'flex',
           flexDirection: 'column',
           minHeight: '100vh',
-          ...(showNavigation && {
-            marginLeft: isMobile ? 0 : `${drawerWidth}px`,
-          }),
+          width: '100%',
         }}
       >
         {/* Toolbar spacer to push content below fixed AppBar */}
-        {showNavigation && <Toolbar />}
+        {showNavigation && (
+          <Toolbar 
+            sx={{ 
+              minHeight: '64px !important',
+              '@media (min-width:0px)': {
+                minHeight: '64px',
+              },
+              '@media (min-width:600px)': {
+                minHeight: '64px',
+              },
+            }} 
+          />
+        )}
         
         {/* Page Content Container */}
-        <Container
-          maxWidth="xl"
+        <Box
           sx={{
             flexGrow: 1,
-            py: theme.custom.spacing.section / 8, // Convert to theme spacing units
-            px: {
-              xs: theme.spacing(2),
-              sm: theme.spacing(3),
-              md: theme.spacing(4),
-            },
             backgroundColor: theme.custom.colors.background.subtle,
             minHeight: showNavigation ? 'calc(100vh - 64px)' : '100vh',
+            width: '100%',
           }}
         >
           {children}
-        </Container>
+        </Box>
       </Box>
     </Box>
   );

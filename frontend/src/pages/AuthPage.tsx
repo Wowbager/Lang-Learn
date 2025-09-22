@@ -7,7 +7,7 @@ import { Box, Container, Tabs, Tab } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
-import { AppHeader } from '../components/layout/AppHeader';
+import { AuthHeader } from '../components/layout/AuthHeader';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -69,7 +69,7 @@ export const AuthPage: React.FC = () => {
 
   return (
     <>
-      <AppHeader />
+      <AuthHeader />
       <Container maxWidth="sm" sx={{ py: 4 }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs
