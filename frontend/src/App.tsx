@@ -8,6 +8,7 @@ import { ContentPage } from './pages/ContentPage';
 import { CollaborationPage } from './pages/CollaborationPage';
 import { ProfileForm } from './components/auth/ProfileForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { AppLayout } from './components/layout/AppLayout';
 import { UserRole } from './types/auth';
 import { theme } from './theme';
 import './App.css';
@@ -19,6 +20,19 @@ const Dashboard: React.FC = () => (
     <p>Welcome to your learning dashboard!</p>
     <p>This is a protected area that requires authentication.</p>
   </Box>
+);
+
+// Wrapper component for protected routes with layout
+const ProtectedRouteWithLayout: React.FC<{
+  children: React.ReactNode;
+  requiredRole?: UserRole;
+  redirectTo?: string;
+}> = ({ children, requiredRole, redirectTo = '/auth' }) => (
+  <ProtectedRoute requiredRole={requiredRole} redirectTo={redirectTo}>
+    <AppLayout>
+      {children}
+    </AppLayout>
+  </ProtectedRoute>
 );
 
 function App() {
@@ -36,36 +50,36 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRouteWithLayout>
                     <Dashboard />
-                  </ProtectedRoute>
+                  </ProtectedRouteWithLayout>
                 }
               />
               
               <Route
                 path="/profile"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRouteWithLayout>
                     <ProfileForm />
-                  </ProtectedRoute>
+                  </ProtectedRouteWithLayout>
                 }
               />
               
               <Route
                 path="/content"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRouteWithLayout>
                     <ContentPage />
-                  </ProtectedRoute>
+                  </ProtectedRouteWithLayout>
                 }
               />
               
               <Route
                 path="/collaboration"
                 element={
-                  <ProtectedRoute>
+                  <ProtectedRouteWithLayout>
                     <CollaborationPage />
-                  </ProtectedRoute>
+                  </ProtectedRouteWithLayout>
                 }
               />
               
@@ -73,20 +87,20 @@ function App() {
               <Route
                 path="/teacher-dashboard"
                 element={
-                  <ProtectedRoute requiredRole={UserRole.TEACHER}>
+                  <ProtectedRouteWithLayout requiredRole={UserRole.TEACHER}>
                     <Box sx={{ p: 3 }}>
                       <h1>Teacher Dashboard</h1>
                       <p>This area is only accessible to teachers.</p>
                     </Box>
-                  </ProtectedRoute>
+                  </ProtectedRouteWithLayout>
                 }
               />
               
               {/* Default routes - show dashboard for authenticated users, auth for non-authenticated */}
               <Route path="/" element={
-                <ProtectedRoute redirectTo="/auth">
+                <ProtectedRouteWithLayout redirectTo="/auth">
                   <Dashboard />
-                </ProtectedRoute>
+                </ProtectedRouteWithLayout>
               } />
               
               {/* Catch all route - redirect to home */}

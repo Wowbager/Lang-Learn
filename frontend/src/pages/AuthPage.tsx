@@ -7,6 +7,7 @@ import { Box, Container, Tabs, Tab } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { LoginForm } from '../components/auth/LoginForm';
 import { RegisterForm } from '../components/auth/RegisterForm';
+import { AppHeader } from '../components/layout/AppHeader';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -67,7 +68,9 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
+    <>
+      <AppHeader />
+      <Container maxWidth="sm" sx={{ py: 4 }}>
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs
           value={tabValue}
@@ -83,30 +86,17 @@ export const AuthPage: React.FC = () => {
       <TabPanel value={tabValue} index={0}>
         <LoginForm
           onSwitchToRegister={switchToRegister}
-          onLoginSuccess={() => {
-            // Handle successful login (redirect to intended page or dashboard)
-            const redirectTo = localStorage.getItem('redirectAfterLogin') || '/dashboard';
-            localStorage.removeItem('redirectAfterLogin');
-            const domain = process.env.REACT_APP_DOMAIN || 't.lrnm.eu';
-            const protocol = domain.includes('localhost') ? 'http://' : 'https://';
-            window.location.href = `${protocol}${domain}${redirectTo}`;
-          }}
+          onLoginSuccess={handleLoginSuccess}
         />
       </TabPanel>
 
       <TabPanel value={tabValue} index={1}>
         <RegisterForm
           onSwitchToLogin={switchToLogin}
-          onRegistrationSuccess={() => {
-            // Handle successful registration (redirect to intended page or dashboard)
-            const redirectTo = localStorage.getItem('redirectAfterLogin') || '/dashboard';
-            localStorage.removeItem('redirectAfterLogin');
-            const domain = process.env.REACT_APP_DOMAIN || 't.lrnm.eu';
-            const protocol = domain.includes('localhost') ? 'http://' : 'https://';
-            window.location.href = `${protocol}${domain}${redirectTo}`;
-          }}
+          onRegistrationSuccess={handleRegistrationSuccess}
         />
       </TabPanel>
     </Container>
+    </>
   );
 };

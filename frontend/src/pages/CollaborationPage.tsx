@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Container,
   Typography,
   Button,
   Alert,
@@ -324,24 +323,22 @@ export const CollaborationPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Container maxWidth="xl" sx={{ py: 3 }}>
-        {renderHeader()}
-        
-        {error && (
-          <Alert 
-            severity="error" 
-            onClose={() => setError(null)}
-            sx={{ mb: 3 }}
-          >
-            {error}
-          </Alert>
-        )}
-        
-        <Box>
-          {renderContent()}
-        </Box>
-      </Container>
-    </Box>
+    <>
+      {renderHeader()}
+      
+      {error && (
+        <Alert 
+          severity="error" 
+          onClose={() => setError(null)}
+          sx={{ mb: 3 }}
+        >
+          {error}
+        </Alert>
+      )}
+      
+      <Box>
+        {renderContent()}
+      </Box>
+    </>
   );
 };

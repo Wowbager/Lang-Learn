@@ -8,7 +8,6 @@ import {
   Breadcrumbs,
   Link,
   Typography,
-  Container,
 } from '@mui/material';
 import {
   Home as HomeIcon,
@@ -82,13 +81,12 @@ export const ContentPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Container maxWidth="xl" sx={{ py: 3 }}>
-        {/* Breadcrumb Navigation */}
-        <Breadcrumbs
-          separator={<NavigateNextIcon fontSize="small" />}
-          sx={{ mb: 4 }}
-        >
+    <>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumbs
+        separator={<NavigateNextIcon fontSize="small" />}
+        sx={{ mb: 4 }}
+      >
           <Link
             component="button"
             variant="body2"
@@ -175,7 +173,6 @@ export const ContentPage: React.FC = () => {
             onBack={handleBackToLearningSets}
           />
         )}
-      </Container>
-    </Box>
+    </>
   );
 };
