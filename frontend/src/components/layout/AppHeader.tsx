@@ -209,7 +209,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   fontWeight: theme.typography.fontWeightMedium,
                 }}
               >
-                Welcome, {user.full_name || user.username}
+                Welcome, {user.full_name || user.username || 'User'}
               </Typography>
             )}
 
@@ -240,7 +240,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   fontWeight: theme.typography.fontWeightMedium,
                 }}
               >
-                {(user.full_name || user.username).charAt(0).toUpperCase()}
+                {(user.full_name || user.username || 'U').charAt(0).toUpperCase()}
               </Avatar>
             </IconButton>
           </Box>
@@ -273,7 +273,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {user && (
             <Box sx={{ px: 2, py: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
               <Typography variant="subtitle2" sx={{ fontWeight: theme.typography.fontWeightMedium }}>
-                {user.full_name || user.username}
+                {user.full_name || user.username || 'User'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {user.email}

@@ -1,10 +1,44 @@
 /**
- * Detailed view of a learning set with vocabulary and grammar items
+ * Detailed view of a learning set with inline vocabulary editing
  */
 
 import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  Alert,
+  Container,
+  Paper,
+  Tabs,
+  Tab,
+  IconButton,
+  Chip,
+  Stack,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material';
+import {
+  ArrowBack as ArrowBackIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Add as AddIcon,
+  Save as SaveIcon,
+  Cancel as CancelIcon,
+  Chat as ChatIcon,
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { contentService, LearningSet, VocabularyItem, GrammarTopic } from '../../services/contentService';
-import { VocabularyForm } from './VocabularyForm';
 import { GrammarForm } from './GrammarForm';
 
 interface LearningSetDetailProps {
@@ -12,17 +46,53 @@ interface LearningSetDetailProps {
   onBack: () => void;
 }
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+interface VocabEditState {
+  [key: string]: VocabularyItem;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
+
 export const LearningSetDetail: React.FC<LearningSetDetailProps> = ({
   learningSetId,
-  onBack
+  onBack,
 }) => {
+  const navigate = useNavigate();
   const [learningSet, setLearningSet] = useState<LearningSet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'vocabulary' | 'grammar'>('vocabulary');
-  const [showVocabForm, setShowVocabForm] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  
+  // Vocabulary editing state
+  const [editingVocab, setEditingVocab] = useState<VocabEditState>({});
+  const [newVocab, setNewVocab] = useState<Partial<VocabularyItem> | null>(null);
+  const [savingVocab, setSavingVocab] = useState<string | null>(null);
+  
+  // Grammar editing state
   const [showGrammarForm, setShowGrammarForm] = useState(false);
-  const [editingVocab, setEditingVocab] = useState<VocabularyItem | null>(null);
   const [editingGrammar, setEditingGrammar] = useState<GrammarTopic | null>(null);
 
   useEffect(() => {
@@ -42,6 +112,53 @@ export const LearningSetDetail: React.FC<LearningSetDetailProps> = ({
     }
   };
 
+  // Vocabulary handlers
+  const handleStartEditVocab = (vocab: VocabularyItem) => {
+    setEditingVocab(prev => ({ ...prev, [vocab.id]: { ...vocab } }));
+  };
+
+  const handleCancelEditVocab = (id: string) => {
+    const { [id]: removed, ...rest } = editingVocab;
+    setEditingVocab(rest);
+  };
+
+  const handleVocabFieldChange = (id: string, field: keyof VocabularyItem, value: string) => {
+    setEditingVocab(prev => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: value },
+    }));
+  };
+
+  const handleSaveVocab = async (id: string) => {
+    const vocabToSave = editingVocab[id];
+    if (!vocabToSave) return;
+
+    try {
+      setSavingVocab(id);
+      const updated = await contentService.updateVocabulary(id, {
+        word: vocabToSave.word,
+        definition: vocabToSave.definition,
+        example_sentence: vocabToSave.example_sentence,
+        part_of_speech: vocabToSave.part_of_speech,
+        difficulty_level: vocabToSave.difficulty_level,
+        learning_set_id: learningSetId,
+      });
+      
+      if (learningSet) {
+        setLearningSet({
+          ...learningSet,
+          vocabulary_items: learningSet.vocabulary_items?.map(v => v.id === id ? updated : v) || [],
+        });
+      }
+      
+      handleCancelEditVocab(id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save vocabulary');
+    } finally {
+      setSavingVocab(null);
+    }
+  };
+
   const handleDeleteVocabulary = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this vocabulary item?')) {
       return;
@@ -52,7 +169,7 @@ export const LearningSetDetail: React.FC<LearningSetDetailProps> = ({
       if (learningSet) {
         setLearningSet({
           ...learningSet,
-          vocabulary_items: learningSet.vocabulary_items?.filter(v => v.id !== id) || []
+          vocabulary_items: learningSet.vocabulary_items?.filter(v => v.id !== id) || [],
         });
       }
     } catch (err) {
@@ -60,6 +177,57 @@ export const LearningSetDetail: React.FC<LearningSetDetailProps> = ({
     }
   };
 
+  const handleAddNewVocab = () => {
+    setNewVocab({
+      word: '',
+      definition: '',
+      example_sentence: '',
+      part_of_speech: '',
+      difficulty_level: '',
+    });
+  };
+
+  const handleNewVocabFieldChange = (field: string, value: string) => {
+    setNewVocab(prev => prev ? { ...prev, [field]: value } : null);
+  };
+
+  const handleSaveNewVocab = async () => {
+    if (!newVocab || !newVocab.word || !newVocab.definition) {
+      setError('Word and definition are required');
+      return;
+    }
+
+    try {
+      setSavingVocab('new');
+      const created = await contentService.createVocabulary({
+        word: newVocab.word,
+        definition: newVocab.definition,
+        example_sentence: newVocab.example_sentence || '',
+        part_of_speech: newVocab.part_of_speech || '',
+        difficulty_level: newVocab.difficulty_level || '',
+        learning_set_id: learningSetId,
+      });
+      
+      if (learningSet) {
+        setLearningSet({
+          ...learningSet,
+          vocabulary_items: [...(learningSet.vocabulary_items || []), created],
+        });
+      }
+      
+      setNewVocab(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add vocabulary');
+    } finally {
+      setSavingVocab(null);
+    }
+  };
+
+  const handleCancelNewVocab = () => {
+    setNewVocab(null);
+  };
+
+  // Grammar handlers
   const handleDeleteGrammar = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this grammar topic?')) {
       return;
@@ -70,7 +238,7 @@ export const LearningSetDetail: React.FC<LearningSetDetailProps> = ({
       if (learningSet) {
         setLearningSet({
           ...learningSet,
-          grammar_topics: learningSet.grammar_topics?.filter(g => g.id !== id) || []
+          grammar_topics: learningSet.grammar_topics?.filter(g => g.id !== id) || [],
         });
       }
     } catch (err) {
@@ -78,43 +246,18 @@ export const LearningSetDetail: React.FC<LearningSetDetailProps> = ({
     }
   };
 
-  const handleVocabularySaved = (vocabulary: VocabularyItem) => {
-    if (learningSet) {
-      if (editingVocab) {
-        // Update existing
-        setLearningSet({
-          ...learningSet,
-          vocabulary_items: learningSet.vocabulary_items?.map(v => 
-            v.id === vocabulary.id ? vocabulary : v
-          ) || []
-        });
-      } else {
-        // Add new
-        setLearningSet({
-          ...learningSet,
-          vocabulary_items: [...(learningSet.vocabulary_items || []), vocabulary]
-        });
-      }
-    }
-    setShowVocabForm(false);
-    setEditingVocab(null);
-  };
-
   const handleGrammarSaved = (grammar: GrammarTopic) => {
     if (learningSet) {
       if (editingGrammar) {
-        // Update existing
         setLearningSet({
           ...learningSet,
-          grammar_topics: learningSet.grammar_topics?.map(g => 
-            g.id === grammar.id ? grammar : g
-          ) || []
+          grammar_topics:
+            learningSet.grammar_topics?.map(g => (g.id === grammar.id ? grammar : g)) || [],
         });
       } else {
-        // Add new
         setLearningSet({
           ...learningSet,
-          grammar_topics: [...(learningSet.grammar_topics || []), grammar]
+          grammar_topics: [...(learningSet.grammar_topics || []), grammar],
         });
       }
     }
@@ -122,283 +265,404 @@ export const LearningSetDetail: React.FC<LearningSetDetailProps> = ({
     setEditingGrammar(null);
   };
 
+  const handleStartChat = () => {
+    navigate(`/chat?learning_set_id=${learningSetId}`);
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
     );
+  }
+
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
   }
 
   if (!learningSet) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Learning set not found</h3>
-        <button
-          onClick={onBack}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          Go back
-        </button>
-      </div>
+      <Container>
+        <Typography>Learning set not found.</Typography>
+        <Button onClick={onBack}>Go Back</Button>
+      </Container>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={onBack}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{learningSet.name}</h1>
-            {learningSet.description && (
-              <p className="text-gray-600 mt-1">{learningSet.description}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex space-x-2">
-          {learningSet.grade_level && (
-            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-              Grade {learningSet.grade_level}
-            </span>
-          )}
-          {learningSet.subject && (
-            <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-              {learningSet.subject}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-          {error}
-        </div>
-      )}
+      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+          <Stack direction="row" spacing={2} alignItems="center">
+            <IconButton onClick={onBack}>
+              <ArrowBackIcon />
+            </IconButton>
+            <Box>
+              <Typography variant="h5" component="h1" fontWeight="bold">
+                {learningSet.name}
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                {learningSet.description}
+              </Typography>
+            </Box>
+          </Stack>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Button
+              variant="contained"
+              startIcon={<ChatIcon />}
+              onClick={handleStartChat}
+              size="large"
+            >
+              Start Chat
+            </Button>
+            <Stack direction="row" spacing={1}>
+              {learningSet.grade_level && (
+                <Chip label={`Grade ${learningSet.grade_level}`} color="primary" />
+              )}
+              {learningSet.subject && (
+                <Chip label={learningSet.subject} color="secondary" />
+              )}
+            </Stack>
+          </Stack>
+        </Stack>
+      </Paper>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab('vocabulary')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'vocabulary'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Vocabulary ({learningSet.vocabulary_items?.length || 0})
-          </button>
-          <button
-            onClick={() => setActiveTab('grammar')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'grammar'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Grammar ({learningSet.grammar_topics?.length || 0})
-          </button>
-        </nav>
-      </div>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} aria-label="learning set tabs">
+          <Tab label={`Vocabulary (${learningSet.vocabulary_items?.length || 0})`} />
+          <Tab label={`Grammar (${learningSet.grammar_topics?.length || 0})`} />
+        </Tabs>
+      </Box>
 
       {/* Vocabulary Tab */}
-      {activeTab === 'vocabulary' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">Vocabulary Items</h3>
-            <button
-              onClick={() => setShowVocabForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      <TabPanel value={activeTab} index={0}>
+        <Stack spacing={3}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Vocabulary Items</Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddNewVocab}
+              disabled={newVocab !== null}
             >
               Add Vocabulary
-            </button>
-          </div>
+            </Button>
+          </Box>
 
-          {showVocabForm && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <VocabularyForm
-                vocabulary={editingVocab || undefined}
-                learningSetId={learningSet.id}
-                onSave={handleVocabularySaved}
-                onCancel={() => {
-                  setShowVocabForm(false);
-                  setEditingVocab(null);
-                }}
-              />
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {learningSet.vocabulary_items?.map((vocab) => (
-              <div key={vocab.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold text-gray-900">{vocab.word}</h4>
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => {
-                        setEditingVocab(vocab);
-                        setShowVocabForm(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-800 p-1"
-                      title="Edit"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteVocabulary(vocab.id)}
-                      className="text-red-600 hover:text-red-800 p-1"
-                      title="Delete"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                <p className="text-gray-600 text-sm mb-2">{vocab.definition}</p>
-                {vocab.example_sentence && (
-                  <p className="text-gray-500 text-sm italic">"{vocab.example_sentence}"</p>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell width="15%"><strong>Word</strong></TableCell>
+                  <TableCell width="25%"><strong>Definition</strong></TableCell>
+                  <TableCell width="25%"><strong>Example</strong></TableCell>
+                  <TableCell width="12%"><strong>Part of Speech</strong></TableCell>
+                  <TableCell width="10%"><strong>Difficulty</strong></TableCell>
+                  <TableCell width="13%"><strong>Actions</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {/* New Vocabulary Row */}
+                {newVocab && (
+                  <TableRow sx={{ bgcolor: 'action.hover' }}>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        value={newVocab.word || ''}
+                        onChange={(e) => handleNewVocabFieldChange('word', e.target.value)}
+                        placeholder="Word"
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        multiline
+                        value={newVocab.definition || ''}
+                        onChange={(e) => handleNewVocabFieldChange('definition', e.target.value)}
+                        placeholder="Definition"
+                        required
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        multiline
+                        value={newVocab.example_sentence || ''}
+                        onChange={(e) => handleNewVocabFieldChange('example_sentence', e.target.value)}
+                        placeholder="Example sentence"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <FormControl size="small" fullWidth>
+                        <Select
+                          value={newVocab.part_of_speech || ''}
+                          onChange={(e) => handleNewVocabFieldChange('part_of_speech', e.target.value)}
+                        >
+                          <MenuItem value="">-</MenuItem>
+                          <MenuItem value="noun">Noun</MenuItem>
+                          <MenuItem value="verb">Verb</MenuItem>
+                          <MenuItem value="adjective">Adjective</MenuItem>
+                          <MenuItem value="adverb">Adverb</MenuItem>
+                          <MenuItem value="pronoun">Pronoun</MenuItem>
+                          <MenuItem value="preposition">Preposition</MenuItem>
+                          <MenuItem value="conjunction">Conjunction</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+                    <TableCell>
+                      <FormControl size="small" fullWidth>
+                        <Select
+                          value={newVocab.difficulty_level || ''}
+                          onChange={(e) => handleNewVocabFieldChange('difficulty_level', e.target.value)}
+                        >
+                          <MenuItem value="">-</MenuItem>
+                          <MenuItem value="easy">Easy</MenuItem>
+                          <MenuItem value="medium">Medium</MenuItem>
+                          <MenuItem value="hard">Hard</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={handleSaveNewVocab}
+                          disabled={savingVocab === 'new'}
+                        >
+                          <SaveIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={handleCancelNewVocab}
+                          disabled={savingVocab === 'new'}
+                        >
+                          <CancelIcon />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
                 )}
-                <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-                  {vocab.part_of_speech && (
-                    <span className="bg-gray-100 px-2 py-1 rounded">{vocab.part_of_speech}</span>
-                  )}
-                  {vocab.difficulty_level && (
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">{vocab.difficulty_level}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
 
-          {(!learningSet.vocabulary_items || learningSet.vocabulary_items.length === 0) && (
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No vocabulary items yet.</p>
-              <button
-                onClick={() => setShowVocabForm(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                Add First Vocabulary Item
-              </button>
-            </div>
+                {/* Existing Vocabulary Items */}
+                {learningSet.vocabulary_items?.map(vocab => {
+                  const isEditing = editingVocab[vocab.id] !== undefined;
+                  const editData = editingVocab[vocab.id] || vocab;
+
+                  return (
+                    <TableRow key={vocab.id}>
+                      <TableCell>
+                        {isEditing ? (
+                          <TextField
+                            size="small"
+                            fullWidth
+                            value={editData.word}
+                            onChange={(e) => handleVocabFieldChange(vocab.id, 'word', e.target.value)}
+                          />
+                        ) : (
+                          <Typography>{vocab.word}</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isEditing ? (
+                          <TextField
+                            size="small"
+                            fullWidth
+                            multiline
+                            value={editData.definition}
+                            onChange={(e) => handleVocabFieldChange(vocab.id, 'definition', e.target.value)}
+                          />
+                        ) : (
+                          <Typography>{vocab.definition}</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isEditing ? (
+                          <TextField
+                            size="small"
+                            fullWidth
+                            multiline
+                            value={editData.example_sentence || ''}
+                            onChange={(e) => handleVocabFieldChange(vocab.id, 'example_sentence', e.target.value)}
+                          />
+                        ) : (
+                          <Typography fontStyle={vocab.example_sentence ? 'normal' : 'italic'} color={vocab.example_sentence ? 'textPrimary' : 'text.secondary'}>
+                            {vocab.example_sentence || '-'}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isEditing ? (
+                          <FormControl size="small" fullWidth>
+                            <Select
+                              value={editData.part_of_speech || ''}
+                              onChange={(e) => handleVocabFieldChange(vocab.id, 'part_of_speech', e.target.value)}
+                            >
+                              <MenuItem value="">-</MenuItem>
+                              <MenuItem value="noun">Noun</MenuItem>
+                              <MenuItem value="verb">Verb</MenuItem>
+                              <MenuItem value="adjective">Adjective</MenuItem>
+                              <MenuItem value="adverb">Adverb</MenuItem>
+                              <MenuItem value="pronoun">Pronoun</MenuItem>
+                              <MenuItem value="preposition">Preposition</MenuItem>
+                              <MenuItem value="conjunction">Conjunction</MenuItem>
+                            </Select>
+                          </FormControl>
+                        ) : (
+                          <Typography>{vocab.part_of_speech || '-'}</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isEditing ? (
+                          <FormControl size="small" fullWidth>
+                            <Select
+                              value={editData.difficulty_level || ''}
+                              onChange={(e) => handleVocabFieldChange(vocab.id, 'difficulty_level', e.target.value)}
+                            >
+                              <MenuItem value="">-</MenuItem>
+                              <MenuItem value="easy">Easy</MenuItem>
+                              <MenuItem value="medium">Medium</MenuItem>
+                              <MenuItem value="hard">Hard</MenuItem>
+                            </Select>
+                          </FormControl>
+                        ) : (
+                          <Typography>{vocab.difficulty_level || '-'}</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {isEditing ? (
+                          <Stack direction="row" spacing={1}>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleSaveVocab(vocab.id)}
+                              disabled={savingVocab === vocab.id}
+                            >
+                              <SaveIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleCancelEditVocab(vocab.id)}
+                              disabled={savingVocab === vocab.id}
+                            >
+                              <CancelIcon />
+                            </IconButton>
+                          </Stack>
+                        ) : (
+                          <Stack direction="row" spacing={1}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleStartEditVocab(vocab)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteVocabulary(vocab.id)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Stack>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {(!learningSet.vocabulary_items || learningSet.vocabulary_items.length === 0) && !newVocab && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography color="text.secondary">No vocabulary items yet. Click "Add Vocabulary" to get started.</Typography>
+            </Box>
           )}
-        </div>
-      )}
+        </Stack>
+      </TabPanel>
 
-      {/* Grammar Tab */}
-      {activeTab === 'grammar' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">Grammar Topics</h3>
-            <button
-              onClick={() => setShowGrammarForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      {/* Grammar Tab - Keep existing card-based layout */}
+      <TabPanel value={activeTab} index={1}>
+        <Stack spacing={3}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Grammar Topics</Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setEditingGrammar(null);
+                setShowGrammarForm(true);
+              }}
             >
-              Add Grammar Topic
-            </button>
-          </div>
+              Add Grammar
+            </Button>
+          </Box>
 
           {showGrammarForm && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <GrammarForm
-                grammar={editingGrammar || undefined}
-                learningSetId={learningSet.id}
-                onSave={handleGrammarSaved}
-                onCancel={() => {
-                  setShowGrammarForm(false);
-                  setEditingGrammar(null);
-                }}
-              />
-            </div>
+            <GrammarForm
+              grammar={editingGrammar || undefined}
+              learningSetId={learningSet.id}
+              onSave={handleGrammarSaved}
+              onCancel={() => {
+                setShowGrammarForm(false);
+                setEditingGrammar(null);
+              }}
+            />
           )}
 
-          <div className="space-y-4">
-            {learningSet.grammar_topics?.map((grammar) => (
-              <div key={grammar.id} className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900">{grammar.name}</h4>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                      grammar.difficulty === 'beginner' ? 'bg-green-100 text-green-800' :
-                      grammar.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {grammar.difficulty}
-                    </span>
-                  </div>
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => {
-                        setEditingGrammar(grammar);
-                        setShowGrammarForm(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-800 p-1"
-                      title="Edit"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteGrammar(grammar.id)}
-                      className="text-red-600 hover:text-red-800 p-1"
-                      title="Delete"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-                
-                <p className="text-gray-600 mb-3">{grammar.description}</p>
-                
-                {grammar.rule_explanation && (
-                  <div className="mb-3">
-                    <h5 className="font-medium text-gray-900 mb-1">Rule:</h5>
-                    <p className="text-gray-700 text-sm">{grammar.rule_explanation}</p>
-                  </div>
-                )}
-                
-                {grammar.examples && grammar.examples.length > 0 && (
-                  <div>
-                    <h5 className="font-medium text-gray-900 mb-2">Examples:</h5>
-                    <ul className="list-disc list-inside space-y-1">
-                      {grammar.examples.map((example, index) => (
-                        <li key={index} className="text-gray-700 text-sm">{example}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          {learningSet.grammar_topics?.map(grammar => (
+            <Paper key={grammar.id} sx={{ p: 3 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                <Box sx={{ flex: 1 }}>
+                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                    <Typography variant="h6" component="h4">{grammar.name}</Typography>
+                    <Chip label={grammar.difficulty} size="small" />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{grammar.description}</Typography>
+                  {grammar.rule_explanation && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2">Rule:</Typography>
+                      <Typography variant="body2">{grammar.rule_explanation}</Typography>
+                    </Box>
+                  )}
+                  {grammar.examples && grammar.examples.length > 0 && (
+                    <Box>
+                      <Typography variant="subtitle2">Examples:</Typography>
+                      <Stack component="ul" sx={{ pl: 2, m: 0 }}>
+                        {grammar.examples.map((ex, i) => <Typography key={i} variant="body2" component="li">{ex}</Typography>)}
+                      </Stack>
+                    </Box>
+                  )}
+                </Box>
+                <Stack direction="row" spacing={1}>
+                  <IconButton size="small" onClick={() => {
+                    setEditingGrammar(grammar);
+                    setShowGrammarForm(true);
+                  }}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton size="small" color="error" onClick={() => handleDeleteGrammar(grammar.id)}>
+                    <DeleteIcon />
+                  </IconButton>
+                </Stack>
+              </Stack>
+            </Paper>
+          ))}
 
-          {(!learningSet.grammar_topics || learningSet.grammar_topics.length === 0) && (
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No grammar topics yet.</p>
-              <button
-                onClick={() => setShowGrammarForm(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                Add First Grammar Topic
-              </button>
-            </div>
+          {(!learningSet.grammar_topics || learningSet.grammar_topics.length === 0) && !showGrammarForm && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography color="text.secondary">No grammar topics yet. Click "Add Grammar" to get started.</Typography>
+            </Box>
           )}
-        </div>
-      )}
-    </div>
+        </Stack>
+      </TabPanel>
+    </Container>
   );
 };

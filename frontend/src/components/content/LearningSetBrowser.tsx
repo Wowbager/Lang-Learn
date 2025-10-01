@@ -3,6 +3,32 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Button,
+  TextField,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  IconButton,
+  Chip,
+  CircularProgress,
+  Alert,
+  Container,
+  Paper,
+  Stack,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Book as BookIcon,
+  Search as SearchIcon,
+  Chat as ChatIcon,
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { contentService, LearningSet, Collection } from '../../services/contentService';
 
 interface LearningSetBrowserProps {
@@ -16,8 +42,9 @@ export const LearningSetBrowser: React.FC<LearningSetBrowserProps> = ({
   collection,
   onSelectLearningSet,
   onCreateLearningSet,
-  onEditLearningSet
+  onEditLearningSet,
 }) => {
+  const navigate = useNavigate();
   const [learningSets, setLearningSets] = useState<LearningSet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +60,21 @@ export const LearningSetBrowser: React.FC<LearningSetBrowserProps> = ({
       const params: any = {};
       if (collection) params.collection_id = collection.id;
       if (searchTerm) params.search = searchTerm;
-      
+
       const data = await contentService.getLearningSets(params);
-      setLearningSets(data);
-      setError(null);
+      
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setLearningSets(data);
+        setError(null);
+      } else {
+        console.error('Expected array but received:', data);
+        setLearningSets([]);
+        setError('Received invalid data format from server');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load learning sets');
+      setLearningSets([]); // Reset to empty array on error
     } finally {
       setLoading(false);
     }
@@ -57,165 +93,162 @@ export const LearningSetBrowser: React.FC<LearningSetBrowserProps> = ({
     }
   };
 
+  const handleStartChat = (learningSet: LearningSet) => {
+    navigate(`/chat?learning_set_id=${learningSet.id}`);
+  };
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {collection ? `${collection.name} - Learning Sets` : 'Learning Sets'}
-          </h2>
-          {collection?.description && (
-            <p className="text-gray-600 mt-1">{collection.description}</p>
+      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box>
+            <Typography variant="h5" component="h2" fontWeight="bold">
+              {collection ? `${collection.name} - Learning Sets` : 'All Learning Sets'}
+            </Typography>
+            {collection?.description && (
+              <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
+                {collection.description}
+              </Typography>
+            )}
+          </Box>
+          {onCreateLearningSet && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={onCreateLearningSet}
+            >
+              Create Learning Set
+            </Button>
           )}
-        </div>
-        {onCreateLearningSet && (
-          <button
-            onClick={onCreateLearningSet}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Create Learning Set
-          </button>
-        )}
-      </div>
+        </Box>
+      </Paper>
 
       {/* Search */}
-      <div className="max-w-md">
-        <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-          Search Learning Sets
-        </label>
-        <input
-          type="text"
+      <Box sx={{ mb: 4 }}>
+        <TextField
+          fullWidth
           id="search"
+          label="Search Learning Sets"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search learning sets..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Search by name or description..."
+          variant="outlined"
+          InputProps={{
+            startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+          }}
         />
-      </div>
+      </Box>
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <Alert severity="error" sx={{ mb: 3 }}>
           {error}
-        </div>
+        </Alert>
       )}
 
       {/* Learning Sets Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {learningSets.map((learningSet) => (
-          <div
-            key={learningSet.id}
-            className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <h3 
-                className="text-lg font-semibold text-gray-900 truncate cursor-pointer hover:text-blue-600"
-                onClick={() => onSelectLearningSet?.(learningSet)}
-              >
-                {learningSet.name}
-              </h3>
-              <div className="flex space-x-1">
+      <Grid container spacing={3}>
+        {Array.isArray(learningSets) && learningSets.map((learningSet) => (
+          <Grid item xs={12} sm={6} md={4} key={learningSet.id}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Typography variant="h6" component="h3" gutterBottom>
+                  {learningSet.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, minHeight: 40 }}>
+                  {learningSet.description}
+                </Typography>
+                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                  {learningSet.grade_level && (
+                    <Chip label={`Grade ${learningSet.grade_level}`} size="small" color="primary" />
+                  )}
+                  {learningSet.subject && (
+                    <Chip label={learningSet.subject} size="small" color="secondary" />
+                  )}
+                </Stack>
+                <Stack spacing={1}>
+                  <Typography variant="body2" color="text.secondary">
+                    Vocabulary: {learningSet.vocabulary_items?.length || 0} words
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Grammar: {learningSet.grammar_topics?.length || 0} topics
+                  </Typography>
+                </Stack>
+              </CardContent>
+              <CardActions>
+                <Button
+                  size="small"
+                  onClick={() => onSelectLearningSet?.(learningSet)}
+                >
+                  View Details
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<ChatIcon />}
+                  onClick={() => handleStartChat(learningSet)}
+                  sx={{ ml: 1 }}
+                >
+                  Start Chat
+                </Button>
                 {onEditLearningSet && (
-                  <button
+                  <IconButton
+                    size="small"
                     onClick={() => onEditLearningSet(learningSet)}
-                    className="text-blue-600 hover:text-blue-800 p-1"
                     title="Edit learning set"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
+                    <EditIcon />
+                  </IconButton>
                 )}
-                <button
+                <IconButton
+                  size="small"
                   onClick={() => handleDeleteLearningSet(learningSet.id)}
-                  className="text-red-600 hover:text-red-800 p-1"
                   title="Delete learning set"
+                  color="error"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            
-            {learningSet.description && (
-              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                {learningSet.description}
-              </p>
-            )}
-            
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">Vocabulary:</span>
-                <span className="font-medium">{learningSet.vocabulary_items?.length || 0} words</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">Grammar:</span>
-                <span className="font-medium">{learningSet.grammar_topics?.length || 0} topics</span>
-              </div>
-            </div>
-            
-            <div className="flex justify-between items-center mt-4 text-sm text-gray-500">
-              <div className="flex space-x-2">
-                {learningSet.grade_level && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                    Grade {learningSet.grade_level}
-                  </span>
-                )}
-                {learningSet.subject && (
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                    {learningSet.subject}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Action Button */}
-            <button
-              onClick={() => onSelectLearningSet?.(learningSet)}
-              className="w-full mt-4 bg-blue-50 text-blue-700 py-2 px-4 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-            >
-              View Details
-            </button>
-          </div>
+                  <DeleteIcon />
+                </IconButton>
+              </CardActions>
+            </Card>
+          </Grid>
         ))}
-      </div>
+      </Grid>
 
       {/* Empty State */}
       {learningSets.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No learning sets found</h3>
-          <p className="text-gray-500 mb-4">
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <BookIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+          <Typography variant="h5" gutterBottom>
+            No learning sets found
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
             {searchTerm
               ? 'Try adjusting your search to see more results.'
               : collection
-              ? 'This collection doesn\'t have any learning sets yet.'
+              ? "This collection doesn't have any learning sets yet."
               : 'Get started by creating your first learning set.'}
-          </p>
+          </Typography>
           {onCreateLearningSet && (
-            <button
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
               onClick={onCreateLearningSet}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              size="large"
             >
               Create Learning Set
-            </button>
+            </Button>
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Container>
   );
 };

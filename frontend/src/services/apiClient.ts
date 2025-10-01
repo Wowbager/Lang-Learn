@@ -9,7 +9,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 // Create axios instance with default config
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL + '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -1,5 +1,5 @@
 /**
- * Main content management page
+ * Main content management page - Prioritizes Learning Sets with optional Collections
  */
 
 import React, { useState } from 'react';
@@ -8,45 +8,31 @@ import {
   Breadcrumbs,
   Link,
   Typography,
+  Tabs,
+  Tab,
+  Container,
+  Paper,
 } from '@mui/material';
 import {
-  Home as HomeIcon,
+  School as SchoolIcon,
+  Folder as FolderIcon,
   NavigateNext as NavigateNextIcon,
 } from '@mui/icons-material';
-import { CollectionBrowser } from '../components/content/CollectionBrowser';
-import { CollectionForm } from '../components/content/CollectionForm';
 import { LearningSetBrowser } from '../components/content/LearningSetBrowser';
 import { LearningSetForm } from '../components/content/LearningSetForm';
 import { LearningSetDetail } from '../components/content/LearningSetDetail';
-import { Collection, LearningSet } from '../services/contentService';
+import { LearningSet } from '../services/contentService';
 
-type ViewMode = 'collections' | 'collection-form' | 'learning-sets' | 'learning-set-form' | 'learning-set-detail';
+type ViewMode = 'learning-sets' | 'learning-set-form' | 'learning-set-detail' | 'collections';
 
 export const ContentPage: React.FC = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('collections');
-  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('learning-sets');
   const [selectedLearningSet, setSelectedLearningSet] = useState<LearningSet | null>(null);
-  const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
   const [editingLearningSet, setEditingLearningSet] = useState<LearningSet | null>(null);
 
-  const handleSelectCollection = (collection: Collection) => {
-    setSelectedCollection(collection);
-    setViewMode('learning-sets');
-  };
-
-  const handleCreateCollection = () => {
-    setEditingCollection(null);
-    setViewMode('collection-form');
-  };
-
-  const handleEditCollection = (collection: Collection) => {
-    setEditingCollection(collection);
-    setViewMode('collection-form');
-  };
-
-  const handleCollectionSaved = (collection: Collection) => {
-    setSelectedCollection(collection);
-    setViewMode('learning-sets');
+  const handleSelectLearningSet = (learningSet: LearningSet) => {
+    setSelectedLearningSet(learningSet);
+    setViewMode('learning-set-detail');
   };
 
   const handleCreateLearningSet = () => {
@@ -64,115 +50,120 @@ export const ContentPage: React.FC = () => {
     setViewMode('learning-set-detail');
   };
 
-  const handleSelectLearningSet = (learningSet: LearningSet) => {
-    setSelectedLearningSet(learningSet);
-    setViewMode('learning-set-detail');
-  };
-
-  const handleBackToCollections = () => {
-    setSelectedCollection(null);
-    setSelectedLearningSet(null);
-    setViewMode('collections');
-  };
-
   const handleBackToLearningSets = () => {
     setSelectedLearningSet(null);
+    setEditingLearningSet(null);
     setViewMode('learning-sets');
+  };
+
+  const handleTabChange = (_: React.SyntheticEvent, newValue: ViewMode) => {
+    setViewMode(newValue);
+    setSelectedLearningSet(null);
+    setEditingLearningSet(null);
   };
 
   return (
     <>
-      {/* Breadcrumb Navigation */}
-      <Breadcrumbs
-        separator={<NavigateNextIcon fontSize="small" />}
-        sx={{ mb: 4 }}
-      >
+      {/* Main Navigation Tabs */}
+      {viewMode !== 'learning-set-detail' && viewMode !== 'learning-set-form' && (
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs value={viewMode} onChange={handleTabChange}>
+            <Tab 
+              icon={<SchoolIcon />} 
+              iconPosition="start" 
+              label="Learning Sets" 
+              value="learning-sets" 
+            />
+            <Tab 
+              icon={<FolderIcon />} 
+              iconPosition="start" 
+              label="Collections" 
+              value="collections"
+              disabled
+            />
+          </Tabs>
+        </Box>
+      )}
+
+      {/* Breadcrumb Navigation for detail/form views */}
+      {(viewMode === 'learning-set-detail' || viewMode === 'learning-set-form') && (
+        <Breadcrumbs
+          separator={<NavigateNextIcon fontSize="small" />}
+          sx={{ mb: 4 }}
+        >
           <Link
             component="button"
             variant="body2"
-            onClick={handleBackToCollections}
+            onClick={handleBackToLearningSets}
             sx={{
               display: 'flex',
               alignItems: 'center',
               textDecoration: 'none',
-              color: viewMode === 'collections' ? 'text.disabled' : 'primary.main',
-              cursor: viewMode === 'collections' ? 'default' : 'pointer',
+              color: 'primary.main',
+              cursor: 'pointer',
               '&:hover': {
-                textDecoration: viewMode === 'collections' ? 'none' : 'underline',
+                textDecoration: 'underline',
               },
             }}
-            disabled={viewMode === 'collections'}
           >
-            <HomeIcon sx={{ mr: 0.5, fontSize: 16 }} />
-            Collections
+            <SchoolIcon sx={{ mr: 0.5, fontSize: 16 }} />
+            Learning Sets
           </Link>
-          
-          {selectedCollection && (
-            <Link
-              component="button"
-              variant="body2"
-              onClick={handleBackToLearningSets}
-              sx={{
-                textDecoration: 'none',
-                color: viewMode === 'learning-sets' ? 'text.disabled' : 'primary.main',
-                cursor: viewMode === 'learning-sets' ? 'default' : 'pointer',
-                '&:hover': {
-                  textDecoration: viewMode === 'learning-sets' ? 'none' : 'underline',
-                },
-              }}
-              disabled={viewMode === 'learning-sets'}
-            >
-              {selectedCollection.name}
-            </Link>
-          )}
           
           {selectedLearningSet && (
             <Typography variant="body2" color="text.primary">
               {selectedLearningSet.name}
             </Typography>
           )}
+
+          {viewMode === 'learning-set-form' && !editingLearningSet && (
+            <Typography variant="body2" color="text.primary">
+              New Learning Set
+            </Typography>
+          )}
+
+          {editingLearningSet && (
+            <Typography variant="body2" color="text.primary">
+              Edit {editingLearningSet.name}
+            </Typography>
+          )}
         </Breadcrumbs>
+      )}
 
-        {/* Main Content */}
-        {viewMode === 'collections' && (
-          <CollectionBrowser
-            onSelectCollection={handleSelectCollection}
-            onCreateCollection={handleCreateCollection}
-          />
-        )}
+      {/* Main Content */}
+      {viewMode === 'learning-sets' && (
+        <LearningSetBrowser
+          onSelectLearningSet={handleSelectLearningSet}
+          onCreateLearningSet={handleCreateLearningSet}
+          onEditLearningSet={handleEditLearningSet}
+        />
+      )}
 
-        {viewMode === 'collection-form' && (
-          <CollectionForm
-            collection={editingCollection || undefined}
-            onSave={handleCollectionSaved}
-            onCancel={handleBackToCollections}
-          />
-        )}
+      {viewMode === 'collections' && (
+        <Container maxWidth="lg" sx={{ py: 4 }}>
+          <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6">Collections</Typography>
+            <Typography color="text.secondary" sx={{ mt: 2 }}>
+              Collections feature coming soon. For now, you can organize your learning sets directly.
+            </Typography>
+          </Paper>
+        </Container>
+      )}
 
-        {viewMode === 'learning-sets' && selectedCollection && (
-          <LearningSetBrowser
-            collection={selectedCollection}
-            onSelectLearningSet={handleSelectLearningSet}
-            onCreateLearningSet={handleCreateLearningSet}
-            onEditLearningSet={handleEditLearningSet}
-          />
-        )}
+      {viewMode === 'learning-set-form' && (
+        <LearningSetForm
+          learningSet={editingLearningSet || undefined}
+          onSave={handleLearningSetSaved}
+          onCancel={handleBackToLearningSets}
+        />
+      )}
 
-        {viewMode === 'learning-set-form' && (
-          <LearningSetForm
-            learningSet={editingLearningSet || undefined}
-            defaultCollectionId={selectedCollection?.id}
-            onSave={handleLearningSetSaved}
-            onCancel={handleBackToLearningSets}
-          />
-        )}
-
-        {viewMode === 'learning-set-detail' && selectedLearningSet && (
-          <LearningSetDetail
-            learningSetId={selectedLearningSet.id}
-            onBack={handleBackToLearningSets}
-          />
-        )}
+      {viewMode === 'learning-set-detail' && selectedLearningSet && (
+        <LearningSetDetail
+          learningSetId={selectedLearningSet.id}
+          onBack={handleBackToLearningSets}
+        />
+      )}
     </>
   );
 };

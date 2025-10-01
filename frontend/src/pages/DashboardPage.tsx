@@ -20,6 +20,7 @@ import {
   TrendingUp,
   School,
   Person,
+  Chat,
   ArrowForward,
   PlayArrow,
   Assignment,
@@ -60,6 +61,14 @@ const DashboardPage: React.FC = () => {
       icon: <MenuBook />,
       path: '/content',
       color: '#1976d2',
+    },
+    {
+      id: 'chat',
+      title: 'AI Chat Tutor',
+      description: 'Practice conversations with your AI language tutor',
+      icon: <Chat />,
+      path: '/chat',
+      color: '#9c27b0',
     },
     {
       id: 'collaboration',

@@ -22,6 +22,7 @@ import {
   Group,
   School,
   Person,
+  Chat,
   ExpandLess,
   ExpandMore,
   Home,
@@ -68,6 +69,13 @@ const navigationItems: NavigationItem[] = [
     path: '/content',
     icon: <MenuBook />,
     description: 'Browse and manage learning materials',
+  },
+  {
+    id: 'chat',
+    label: 'Chat',
+    path: '/chat',
+    icon: <Chat />,
+    description: 'Practice with AI language tutor',
   },
   {
     id: 'collaboration',

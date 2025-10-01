@@ -148,12 +148,8 @@ async def delete_collection(
     if db_collection.created_by != current_user.id:
         raise HTTPException(status_code=403, detail="Only the creator can delete this collection")
     
-    # Check if collection has learning sets
-    if db_collection.learning_sets:
-        raise HTTPException(
-            status_code=400, 
-            detail="Cannot delete collection with learning sets. Delete or move learning sets first."
-        )
+    # No need to check for learning sets since they're now in a many-to-many relationship
+    # Deleting a collection will just remove the association, not the learning sets
     
     db.delete(db_collection)
     db.commit()
@@ -167,24 +163,30 @@ async def create_learning_set(
     db: Session = Depends(get_db)
 ):
     """Create a new learning set."""
-    # Verify collection exists and user has access
-    collection = db.query(Collection).filter(Collection.id == learning_set.collection_id).first()
-    if not collection:
-        raise HTTPException(status_code=404, detail="Collection not found")
-    
-    if collection.created_by != current_user.id:
-        raise HTTPException(status_code=403, detail="Access denied to this collection")
+    # Verify collections exist and user has access (if any specified)
+    if learning_set.collection_ids:
+        for collection_id in learning_set.collection_ids:
+            collection = db.query(Collection).filter(Collection.id == collection_id).first()
+            if not collection:
+                raise HTTPException(status_code=404, detail=f"Collection {collection_id} not found")
+            
+            if collection.created_by != current_user.id:
+                raise HTTPException(status_code=403, detail=f"Access denied to collection {collection_id}")
     
     db_learning_set = LearningSet(
         id=str(uuid4()),
         name=learning_set.name,
         description=learning_set.description,
-        collection_id=learning_set.collection_id,
         created_by=current_user.id,
         grade_level=learning_set.grade_level,
         subject=learning_set.subject
     )
     db.add(db_learning_set)
+    
+    # Add collections if specified
+    if learning_set.collection_ids:
+        collections = db.query(Collection).filter(Collection.id.in_(learning_set.collection_ids)).all()
+        db_learning_set.collections = collections
     
     # Create owner permission for the creator
     owner_permission = Permission(
@@ -214,7 +216,8 @@ async def get_learning_sets(
     """Get learning sets with filtering and pagination."""
     query = db.query(LearningSet).options(
         selectinload(LearningSet.vocabulary_items),
-        selectinload(LearningSet.grammar_topics)
+        selectinload(LearningSet.grammar_topics),
+        selectinload(LearningSet.collections)
     )
     
     # Filter by user's access (created by user or has permissions)
@@ -227,7 +230,7 @@ async def get_learning_sets(
     
     # Apply filters
     if collection_id:
-        query = query.filter(LearningSet.collection_id == collection_id)
+        query = query.filter(LearningSet.collections.any(Collection.id == collection_id))
     if grade_level:
         query = query.filter(LearningSet.grade_level == grade_level)
     if subject:
@@ -253,7 +256,8 @@ async def get_learning_set(
     learning_set = db.query(LearningSet).options(
         selectinload(LearningSet.vocabulary_items),
         selectinload(LearningSet.grammar_topics),
-        selectinload(LearningSet.permissions)
+        selectinload(LearningSet.permissions),
+        selectinload(LearningSet.collections)
     ).filter(LearningSet.id == learning_set_id).first()
     
     if not learning_set:
@@ -276,7 +280,8 @@ async def update_learning_set(
 ):
     """Update a learning set."""
     db_learning_set = db.query(LearningSet).options(
-        selectinload(LearningSet.permissions)
+        selectinload(LearningSet.permissions),
+        selectinload(LearningSet.collections)
     ).filter(LearningSet.id == learning_set_id).first()
     
     if not db_learning_set:
@@ -291,16 +296,25 @@ async def update_learning_set(
         if not user_permission or user_permission.role not in [PermissionRole.OWNER, PermissionRole.EDITOR]:
             raise HTTPException(status_code=403, detail="Insufficient permissions to edit this learning set")
     
-    # If changing collection, verify access to new collection
-    if learning_set_update.collection_id and learning_set_update.collection_id != db_learning_set.collection_id:
-        new_collection = db.query(Collection).filter(Collection.id == learning_set_update.collection_id).first()
-        if not new_collection:
-            raise HTTPException(status_code=404, detail="New collection not found")
-        if new_collection.created_by != current_user.id:
-            raise HTTPException(status_code=403, detail="Access denied to target collection")
+    # If changing collections, verify access to new collections
+    if learning_set_update.collection_ids is not None:
+        if learning_set_update.collection_ids:
+            for collection_id in learning_set_update.collection_ids:
+                new_collection = db.query(Collection).filter(Collection.id == collection_id).first()
+                if not new_collection:
+                    raise HTTPException(status_code=404, detail=f"Collection {collection_id} not found")
+                if new_collection.created_by != current_user.id:
+                    raise HTTPException(status_code=403, detail=f"Access denied to collection {collection_id}")
+            
+            # Update collections
+            collections = db.query(Collection).filter(Collection.id.in_(learning_set_update.collection_ids)).all()
+            db_learning_set.collections = collections
+        else:
+            # Clear all collections
+            db_learning_set.collections = []
     
-    # Update fields
-    update_data = learning_set_update.model_dump(exclude_unset=True)
+    # Update other fields
+    update_data = learning_set_update.model_dump(exclude_unset=True, exclude={'collection_ids'})
     for field, value in update_data.items():
         setattr(db_learning_set, field, value)
     

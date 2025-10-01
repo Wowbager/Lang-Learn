@@ -1,0 +1,287 @@
+/* Chat page styles */
+
+.chat-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--background-color);
+}
+
+.chat-page.loading,
+.chat-page.error {
+  justify-content: center;
+  align-items: center;
+}
+
+/* Loading state */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-container p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Error state */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  max-width: 500px;
+}
+
+.error-icon {
+  font-size: 4rem;
+  opacity: 0.7;
+}
+
+.error-container h2 {
+  margin: 0;
+  color: var(--error-color);
+  font-size: 1.5rem;
+}
+
+.error-container p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.error-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Page header */
+.chat-page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  background: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.back-button:hover {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.retry-button {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.retry-button:hover {
+  background: var(--primary-dark);
+}
+
+/* Learning set info */
+.learning-set-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.learning-set-info h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.learning-set-description {
+  margin: 0 0 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.learning-set-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.meta-tag {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Chat container */
+.chat-container {
+  flex: 1;
+  padding: 1rem 2rem 2rem;
+  min-height: 0;
+}
+
+.main-chat {
+  height: 100%;
+  max-height: 100%;
+}
+
+/* Animations */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Focus states for accessibility */
+.back-button:focus-visible,
+.retry-button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chat-page-header {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .back-button {
+    align-self: flex-start;
+  }
+  
+  .learning-set-info h1 {
+    font-size: 1.25rem;
+  }
+  
+  .learning-set-meta {
+    gap: 0.375rem;
+  }
+  
+  .meta-tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+  }
+  
+  .chat-container {
+    padding: 0.75rem;
+  }
+  
+  .error-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .error-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .chat-page-header {
+    padding: 0.75rem;
+  }
+  
+  .learning-set-info h1 {
+    font-size: 1.125rem;
+  }
+  
+  .chat-container {
+    padding: 0.5rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .chat-page {
+    background: var(--background-dark);
+  }
+  
+  .chat-page-header {
+    background: var(--surface-dark);
+    border-bottom-color: var(--border-dark);
+  }
+  
+  .back-button {
+    border-color: var(--border-dark);
+    color: var(--text-secondary-dark);
+  }
+  
+  .back-button:hover {
+    background: var(--primary-dark);
+    color: var(--primary-light);
+    border-color: var(--primary-light);
+  }
+  
+  .learning-set-info h1 {
+    color: var(--text-primary-dark);
+  }
+  
+  .learning-set-description {
+    color: var(--text-secondary-dark);
+  }
+  
+  .meta-tag {
+    background: var(--primary-dark);
+    color: var(--primary-light);
+  }
+  
+  .loading-container p {
+    color: var(--text-secondary-dark);
+  }
+  
+  .error-container p {
+    color: var(--text-secondary-dark);
+  }
+  
+  .loading-spinner {
+    border-color: var(--border-dark);
+    border-top-color: var(--primary-light);
+  }
+}

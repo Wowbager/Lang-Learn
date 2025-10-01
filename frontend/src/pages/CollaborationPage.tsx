@@ -48,9 +48,18 @@ export const CollaborationPage: React.FC = () => {
       setIsLoading(true);
       setError(null);
       const classesData = await collaborationService.getUserClasses();
-      setClasses(classesData);
+      
+      // Ensure data is an array
+      if (Array.isArray(classesData)) {
+        setClasses(classesData);
+      } else {
+        console.error('Expected array but received:', classesData);
+        setClasses([]);
+        setError('Failed to load classes: invalid data format');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load classes');
+      setClasses([]); // Reset to empty array on error
     } finally {
       setIsLoading(false);
     }
@@ -67,10 +76,17 @@ export const CollaborationPage: React.FC = () => {
       
       // Get shared content for this class
       const allSharedContent = await collaborationService.getSharedContent();
-      const classSharedContent = allSharedContent.filter(content => 
-        content.shared_via === 'class' && content.class_name === classData.name
-      );
-      setSharedContent(classSharedContent);
+      
+      // Ensure data is an array before filtering
+      if (Array.isArray(allSharedContent)) {
+        const classSharedContent = allSharedContent.filter(content => 
+          content.shared_via === 'class' && content.class_name === classData.name
+        );
+        setSharedContent(classSharedContent);
+      } else {
+        console.error('Expected array but received:', allSharedContent);
+        setSharedContent([]);
+      }
       
       setCurrentView('detail');
     } catch (err) {

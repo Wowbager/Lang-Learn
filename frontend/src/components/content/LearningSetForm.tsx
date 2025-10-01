@@ -3,27 +3,42 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  CircularProgress,
+  Alert,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper,
+  Chip,
+  OutlinedInput,
+} from '@mui/material';
+import { SelectChangeEvent } from '@mui/material/Select';
 import { contentService, LearningSet, Collection, CreateLearningSetData } from '../../services/contentService';
 
 interface LearningSetFormProps {
   learningSet?: LearningSet;
-  defaultCollectionId?: string;
   onSave: (learningSet: LearningSet) => void;
   onCancel: () => void;
 }
 
 export const LearningSetForm: React.FC<LearningSetFormProps> = ({
   learningSet,
-  defaultCollectionId,
   onSave,
-  onCancel
+  onCancel,
 }) => {
   const [formData, setFormData] = useState<CreateLearningSetData>({
     name: learningSet?.name || '',
     description: learningSet?.description || '',
-    collection_id: learningSet?.collection_id || defaultCollectionId || '',
+    collection_ids: learningSet?.collection_ids || [],
     grade_level: learningSet?.grade_level || '',
-    subject: learningSet?.subject || ''
+    subject: learningSet?.subject || '',
   });
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,9 +53,18 @@ export const LearningSetForm: React.FC<LearningSetFormProps> = ({
     try {
       setLoadingCollections(true);
       const data = await contentService.getCollections();
-      setCollections(data);
+      
+      // Ensure data is an array
+      if (Array.isArray(data)) {
+        setCollections(data);
+      } else {
+        console.error('Expected array but received:', data);
+        setCollections([]);
+        setError('Failed to load collections: invalid data format');
+      }
     } catch (err) {
       setError('Failed to load collections');
+      setCollections([]); // Reset to empty array on error
     } finally {
       setLoadingCollections(false);
     }
@@ -48,28 +72,23 @@ export const LearningSetForm: React.FC<LearningSetFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       setError('Learning set name is required');
-      return;
-    }
-
-    if (!formData.collection_id) {
-      setError('Please select a collection');
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      
+
       let savedLearningSet: LearningSet;
       if (learningSet) {
         savedLearningSet = await contentService.updateLearningSet(learningSet.id, formData);
       } else {
         savedLearningSet = await contentService.createLearningSet(formData);
       }
-      
+
       onSave(savedLearningSet);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save learning set');
@@ -78,155 +97,186 @@ export const LearningSetForm: React.FC<LearningSetFormProps> = ({
     }
   };
 
-  const handleChange = (field: keyof CreateLearningSetData, value: string) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [name]: value,
+    }));
+  };
+
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleCollectionsChange = (e: SelectChangeEvent<string[]>) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      collection_ids: typeof value === 'string' ? value.split(',') : value,
     }));
   };
 
   if (loadingCollections) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-bold text-gray-900 mb-6">
+    <Paper elevation={3} sx={{ p: 4, maxWidth: 600, mx: 'auto' }}>
+      <Typography variant="h5" component="h2" sx={{ mb: 3 }}>
         {learningSet ? 'Edit Learning Set' : 'Create New Learning Set'}
-      </h2>
+      </Typography>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Name */}
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Learning Set Name *
-          </label>
-          <input
-            type="text"
+      <form onSubmit={handleSubmit}>
+        <Stack spacing={3}>
+          {/* Name */}
+          <TextField
             id="name"
+            name="name"
+            label="Learning Set Name"
             value={formData.name}
-            onChange={(e) => handleChange('name', e.target.value)}
+            onChange={handleInputChange}
             placeholder="Enter learning set name"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            fullWidth
             required
+            variant="outlined"
           />
-        </div>
 
-        {/* Collection */}
-        <div>
-          <label htmlFor="collection_id" className="block text-sm font-medium text-gray-700 mb-1">
-            Collection *
-          </label>
-          <select
-            id="collection_id"
-            value={formData.collection_id}
-            onChange={(e) => handleChange('collection_id', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          >
-            <option value="">Select a collection</option>
-            {collections.map((collection) => (
-              <option key={collection.id} value={collection.id}>
-                {collection.name}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Collections (Optional Multi-Select) */}
+          <FormControl fullWidth variant="outlined">
+            <InputLabel id="collections-label">Collections (Optional)</InputLabel>
+            <Select
+              labelId="collections-label"
+              id="collection_ids"
+              multiple
+              value={formData.collection_ids || []}
+              onChange={handleCollectionsChange}
+              input={<OutlinedInput label="Collections (Optional)" />}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {selected.map((value) => {
+                    const collection = collections.find(c => c.id === value);
+                    return <Chip key={value} label={collection?.name || value} size="small" />;
+                  })}
+                </Box>
+              )}
+            >
+              {collections.length === 0 ? (
+                <MenuItem disabled>
+                  <em>No collections available</em>
+                </MenuItem>
+              ) : (
+                collections.map((collection) => (
+                  <MenuItem key={collection.id} value={collection.id}>
+                    {collection.name}
+                  </MenuItem>
+                ))
+              )}
+            </Select>
+          </FormControl>
 
-        {/* Description */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-            Description
-          </label>
-          <textarea
+          {/* Description */}
+          <TextField
             id="description"
+            name="description"
+            label="Description"
             value={formData.description}
-            onChange={(e) => handleChange('description', e.target.value)}
+            onChange={handleInputChange}
             placeholder="Describe this learning set"
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            multiline
+            rows={4}
+            fullWidth
+            variant="outlined"
           />
-        </div>
 
-        {/* Grade Level */}
-        <div>
-          <label htmlFor="grade_level" className="block text-sm font-medium text-gray-700 mb-1">
-            Grade Level
-          </label>
-          <select
-            id="grade_level"
-            value={formData.grade_level}
-            onChange={(e) => handleChange('grade_level', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select grade level</option>
-            <option value="K">Kindergarten</option>
-            <option value="1">1st Grade</option>
-            <option value="2">2nd Grade</option>
-            <option value="3">3rd Grade</option>
-            <option value="4">4th Grade</option>
-            <option value="5">5th Grade</option>
-            <option value="6">6th Grade</option>
-            <option value="7">7th Grade</option>
-            <option value="8">8th Grade</option>
-            <option value="9">9th Grade</option>
-            <option value="10">10th Grade</option>
-            <option value="11">11th Grade</option>
-            <option value="12">12th Grade</option>
-          </select>
-        </div>
+          {/* Grade Level */}
+          <FormControl fullWidth variant="outlined">
+            <InputLabel id="grade_level-label">Grade Level</InputLabel>
+            <Select
+              labelId="grade_level-label"
+              id="grade_level"
+              name="grade_level"
+              value={formData.grade_level}
+              onChange={handleSelectChange}
+              label="Grade Level"
+            >
+              <MenuItem value="">
+                <em>Select grade level</em>
+              </MenuItem>
+              <MenuItem value="K">Kindergarten</MenuItem>
+              <MenuItem value="1">1st Grade</MenuItem>
+              <MenuItem value="2">2nd Grade</MenuItem>
+              <MenuItem value="3">3rd Grade</MenuItem>
+              <MenuItem value="4">4th Grade</MenuItem>
+              <MenuItem value="5">5th Grade</MenuItem>
+              <MenuItem value="6">6th Grade</MenuItem>
+              <MenuItem value="7">7th Grade</MenuItem>
+              <MenuItem value="8">8th Grade</MenuItem>
+              <MenuItem value="9">9th Grade</MenuItem>
+              <MenuItem value="10">10th Grade</MenuItem>
+              <MenuItem value="11">11th Grade</MenuItem>
+              <MenuItem value="12">12th Grade</MenuItem>
+            </Select>
+          </FormControl>
 
-        {/* Subject */}
-        <div>
-          <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
-            Subject
-          </label>
-          <select
-            id="subject"
-            value={formData.subject}
-            onChange={(e) => handleChange('subject', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select subject</option>
-            <option value="English">English</option>
-            <option value="Spanish">Spanish</option>
-            <option value="French">French</option>
-            <option value="German">German</option>
-            <option value="Italian">Italian</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
+          {/* Subject */}
+          <FormControl fullWidth variant="outlined">
+            <InputLabel id="subject-label">Subject</InputLabel>
+            <Select
+              labelId="subject-label"
+              id="subject"
+              name="subject"
+              value={formData.subject}
+              onChange={handleSelectChange}
+              label="Subject"
+            >
+              <MenuItem value="">
+                <em>Select subject</em>
+              </MenuItem>
+              <MenuItem value="English">English</MenuItem>
+              <MenuItem value="Spanish">Spanish</MenuItem>
+              <MenuItem value="French">French</MenuItem>
+              <MenuItem value="German">German</MenuItem>
+              <MenuItem value="Italian">Italian</MenuItem>
+              <MenuItem value="Other">Other</MenuItem>
+            </Select>
+          </FormControl>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
-            {error}
-          </div>
-        )}
+          {/* Error Message */}
+          {error && <Alert severity="error">{error}</Alert>}
 
-        {/* Buttons */}
-        <div className="flex space-x-3 pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Saving...' : (learningSet ? 'Update' : 'Create')}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-        </div>
+          {/* Buttons */}
+          <Stack direction="row" spacing={2} sx={{ pt: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={loading}
+              sx={{ flex: 1 }}
+            >
+              {loading ? <CircularProgress size={24} /> : (learningSet ? 'Update' : 'Create')}
+            </Button>
+            <Button
+              type="button"
+              variant="outlined"
+              color="secondary"
+              onClick={onCancel}
+              disabled={loading}
+              sx={{ flex: 1 }}
+            >
+              Cancel
+            </Button>
+          </Stack>
+        </Stack>
       </form>
-    </div>
+    </Paper>
   );
 };

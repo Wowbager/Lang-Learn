@@ -25,6 +25,13 @@ class_shared_content = Table(
     Column('learning_set_id', String, ForeignKey('learning_sets.id'), primary_key=True)
 )
 
+learning_set_collections = Table(
+    'learning_set_collections',
+    Base.metadata,
+    Column('learning_set_id', String, ForeignKey('learning_sets.id'), primary_key=True),
+    Column('collection_id', String, ForeignKey('collections.id'), primary_key=True)
+)
+
 # Enums
 class UserRole(enum.Enum):
     STUDENT = "student"
@@ -84,7 +91,7 @@ class Collection(Base):
     
     # Relationships
     creator = relationship("User", back_populates="created_collections")
-    learning_sets = relationship("LearningSet", back_populates="collection")
+    learning_sets = relationship("LearningSet", secondary=learning_set_collections, back_populates="collections")
 
 class LearningSet(Base):
     __tablename__ = "learning_sets"
@@ -92,7 +99,6 @@ class LearningSet(Base):
     id = Column(String, primary_key=True)
     name = Column(String(100), nullable=False)
     description = Column(Text)
-    collection_id = Column(String, ForeignKey("collections.id"), nullable=False)
     created_by = Column(String, ForeignKey("users.id"), nullable=False)
     grade_level = Column(String(20))
     subject = Column(String(50))
@@ -100,7 +106,7 @@ class LearningSet(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
-    collection = relationship("Collection", back_populates="learning_sets")
+    collections = relationship("Collection", secondary=learning_set_collections, back_populates="learning_sets")
     creator = relationship("User", back_populates="created_learning_sets")
     vocabulary_items = relationship("VocabularyItem", back_populates="learning_set")
     grammar_topics = relationship("GrammarTopic", back_populates="learning_set")

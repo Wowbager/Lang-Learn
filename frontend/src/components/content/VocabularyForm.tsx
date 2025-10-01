@@ -3,6 +3,21 @@
  */
 
 import React, { useState } from 'react';
+import {
+  Button,
+  TextField,
+  CircularProgress,
+  Alert,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper,
+  Typography,
+  Grid,
+} from '@mui/material';
+import { SelectChangeEvent } from '@mui/material/Select';
 import { contentService, VocabularyItem, CreateVocabularyData } from '../../services/contentService';
 
 interface VocabularyFormProps {
@@ -16,7 +31,7 @@ export const VocabularyForm: React.FC<VocabularyFormProps> = ({
   vocabulary,
   learningSetId,
   onSave,
-  onCancel
+  onCancel,
 }) => {
   const [formData, setFormData] = useState<CreateVocabularyData>({
     word: vocabulary?.word || '',
@@ -24,14 +39,14 @@ export const VocabularyForm: React.FC<VocabularyFormProps> = ({
     example_sentence: vocabulary?.example_sentence || '',
     part_of_speech: vocabulary?.part_of_speech || '',
     difficulty_level: vocabulary?.difficulty_level || '',
-    learning_set_id: learningSetId
+    learning_set_id: learningSetId,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.word.trim()) {
       setError('Word is required');
       return;
@@ -45,14 +60,14 @@ export const VocabularyForm: React.FC<VocabularyFormProps> = ({
     try {
       setLoading(true);
       setError(null);
-      
+
       let savedVocabulary: VocabularyItem;
       if (vocabulary) {
         savedVocabulary = await contentService.updateVocabulary(vocabulary.id, formData);
       } else {
         savedVocabulary = await contentService.createVocabulary(formData);
       }
-      
+
       onSave(savedVocabulary);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save vocabulary item');
@@ -61,136 +76,144 @@ export const VocabularyForm: React.FC<VocabularyFormProps> = ({
     }
   };
 
-  const handleChange = (field: keyof CreateVocabularyData, value: string) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [name]: value,
+    }));
+  };
+
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
     }));
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg border">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">
+    <Paper elevation={2} sx={{ p: 3, mt: 2 }}>
+      <Typography variant="h6" component="h3" sx={{ mb: 3 }}>
         {vocabulary ? 'Edit Vocabulary Item' : 'Add New Vocabulary Item'}
-      </h3>
+      </Typography>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Word */}
-          <div>
-            <label htmlFor="word" className="block text-sm font-medium text-gray-700 mb-1">
-              Word *
-            </label>
-            <input
-              type="text"
-              id="word"
-              value={formData.word}
-              onChange={(e) => handleChange('word', e.target.value)}
-              placeholder="Enter the word"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+      <form onSubmit={handleSubmit}>
+        <Stack spacing={3}>
+          <Grid container spacing={2}>
+            {/* Word */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                id="word"
+                name="word"
+                label="Word"
+                value={formData.word}
+                onChange={handleInputChange}
+                placeholder="Enter the word"
+                fullWidth
+                required
+                variant="outlined"
+              />
+            </Grid>
 
-          {/* Part of Speech */}
-          <div>
-            <label htmlFor="part_of_speech" className="block text-sm font-medium text-gray-700 mb-1">
-              Part of Speech
-            </label>
-            <select
-              id="part_of_speech"
-              value={formData.part_of_speech}
-              onChange={(e) => handleChange('part_of_speech', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select part of speech</option>
-              <option value="noun">Noun</option>
-              <option value="verb">Verb</option>
-              <option value="adjective">Adjective</option>
-              <option value="adverb">Adverb</option>
-              <option value="pronoun">Pronoun</option>
-              <option value="preposition">Preposition</option>
-              <option value="conjunction">Conjunction</option>
-              <option value="interjection">Interjection</option>
-            </select>
-          </div>
-        </div>
+            {/* Part of Speech */}
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth variant="outlined">
+                <InputLabel id="part_of_speech-label">Part of Speech</InputLabel>
+                <Select
+                  labelId="part_of_speech-label"
+                  id="part_of_speech"
+                  name="part_of_speech"
+                  value={formData.part_of_speech}
+                  onChange={handleSelectChange}
+                  label="Part of Speech"
+                >
+                  <MenuItem value=""><em>Select part of speech</em></MenuItem>
+                  <MenuItem value="noun">Noun</MenuItem>
+                  <MenuItem value="verb">Verb</MenuItem>
+                  <MenuItem value="adjective">Adjective</MenuItem>
+                  <MenuItem value="adverb">Adverb</MenuItem>
+                  <MenuItem value="pronoun">Pronoun</MenuItem>
+                  <MenuItem value="preposition">Preposition</MenuItem>
+                  <MenuItem value="conjunction">Conjunction</MenuItem>
+                  <MenuItem value="interjection">Interjection</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
 
-        {/* Definition */}
-        <div>
-          <label htmlFor="definition" className="block text-sm font-medium text-gray-700 mb-1">
-            Definition *
-          </label>
-          <textarea
+          {/* Definition */}
+          <TextField
             id="definition"
+            name="definition"
+            label="Definition"
             value={formData.definition}
-            onChange={(e) => handleChange('definition', e.target.value)}
+            onChange={handleInputChange}
             placeholder="Enter the definition"
+            multiline
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            fullWidth
             required
+            variant="outlined"
           />
-        </div>
 
-        {/* Example Sentence */}
-        <div>
-          <label htmlFor="example_sentence" className="block text-sm font-medium text-gray-700 mb-1">
-            Example Sentence
-          </label>
-          <textarea
+          {/* Example Sentence */}
+          <TextField
             id="example_sentence"
+            name="example_sentence"
+            label="Example Sentence"
             value={formData.example_sentence}
-            onChange={(e) => handleChange('example_sentence', e.target.value)}
+            onChange={handleInputChange}
             placeholder="Enter an example sentence using this word"
+            multiline
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            fullWidth
+            variant="outlined"
           />
-        </div>
 
-        {/* Difficulty Level */}
-        <div>
-          <label htmlFor="difficulty_level" className="block text-sm font-medium text-gray-700 mb-1">
-            Difficulty Level
-          </label>
-          <select
-            id="difficulty_level"
-            value={formData.difficulty_level}
-            onChange={(e) => handleChange('difficulty_level', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Select difficulty level</option>
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-        </div>
+          {/* Difficulty Level */}
+          <FormControl fullWidth variant="outlined">
+            <InputLabel id="difficulty_level-label">Difficulty Level</InputLabel>
+            <Select
+              labelId="difficulty_level-label"
+              id="difficulty_level"
+              name="difficulty_level"
+              value={formData.difficulty_level}
+              onChange={handleSelectChange}
+              label="Difficulty Level"
+            >
+              <MenuItem value=""><em>Select difficulty level</em></MenuItem>
+              <MenuItem value="beginner">Beginner</MenuItem>
+              <MenuItem value="intermediate">Intermediate</MenuItem>
+              <MenuItem value="advanced">Advanced</MenuItem>
+            </Select>
+          </FormControl>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
-            {error}
-          </div>
-        )}
+          {/* Error Message */}
+          {error && <Alert severity="error">{error}</Alert>}
 
-        {/* Buttons */}
-        <div className="flex space-x-3 pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Saving...' : (vocabulary ? 'Update' : 'Add')}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-        </div>
+          {/* Buttons */}
+          <Stack direction="row" spacing={2} sx={{ pt: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={24} /> : (vocabulary ? 'Update' : 'Add')}
+            </Button>
+            <Button
+              type="button"
+              variant="outlined"
+              color="secondary"
+              onClick={onCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          </Stack>
+        </Stack>
       </form>
-    </div>
+    </Paper>
   );
 };

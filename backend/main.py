@@ -9,6 +9,7 @@ from api.auth import router as auth_router
 from api.content import router as content_router
 from api.image_processing import router as image_processing_router
 from api.collaboration import router as collaboration_router
+from api.chat import router as chat_router
 from database.connection import create_tables
 from auth.dependencies import get_current_user
 from models.database_models import User
@@ -33,6 +34,7 @@ app.include_router(auth_router)
 app.include_router(content_router)
 app.include_router(image_processing_router)
 app.include_router(collaboration_router)
+app.include_router(chat_router)
 
 # Create database tables on startup
 @app.on_event("startup")

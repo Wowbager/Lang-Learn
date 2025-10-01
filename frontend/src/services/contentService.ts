@@ -3,96 +3,17 @@
  */
 
 import apiClient from './apiClient';
-
-export interface Collection {
-  id: string;
-  name: string;
-  description?: string;
-  grade_level?: string;
-  subject?: string;
-  created_by: string;
-  created_at: string;
-  updated_at?: string;
-  learning_sets?: LearningSet[];
-}
-
-export interface LearningSet {
-  id: string;
-  name: string;
-  description?: string;
-  collection_id: string;
-  created_by: string;
-  grade_level?: string;
-  subject?: string;
-  created_at: string;
-  updated_at?: string;
-  vocabulary_items?: VocabularyItem[];
-  grammar_topics?: GrammarTopic[];
-}
-
-export interface VocabularyItem {
-  id: string;
-  word: string;
-  definition: string;
-  example_sentence?: string;
-  part_of_speech?: string;
-  difficulty_level?: string;
-  learning_set_id: string;
-  created_at: string;
-}
-
-export interface GrammarTopic {
-  id: string;
-  name: string;
-  description: string;
-  rule_explanation?: string;
-  examples?: string[];
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  learning_set_id: string;
-  created_at: string;
-}
-
-export interface Permission {
-  id: string;
-  user_id: string;
-  learning_set_id: string;
-  role: 'viewer' | 'editor' | 'owner';
-  granted_by: string;
-  granted_at: string;
-}
-
-export interface CreateCollectionData {
-  name: string;
-  description?: string;
-  grade_level?: string;
-  subject?: string;
-}
-
-export interface CreateLearningSetData {
-  name: string;
-  description?: string;
-  collection_id: string;
-  grade_level?: string;
-  subject?: string;
-}
-
-export interface CreateVocabularyData {
-  word: string;
-  definition: string;
-  example_sentence?: string;
-  part_of_speech?: string;
-  difficulty_level?: string;
-  learning_set_id: string;
-}
-
-export interface CreateGrammarData {
-  name: string;
-  description: string;
-  rule_explanation?: string;
-  examples?: string[];
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  learning_set_id: string;
-}
+import {
+  Collection,
+  LearningSet,
+  VocabularyItem,
+  GrammarTopic,
+  Permission,
+  CreateCollectionData,
+  CreateLearningSetData,
+  CreateVocabularyData,
+  CreateGrammarData
+} from '../types/content';
 
 class ContentService {
   // Collection methods
@@ -230,3 +151,16 @@ class ContentService {
 }
 
 export const contentService = new ContentService();
+
+// Re-export types for convenience
+export type {
+  Collection,
+  LearningSet,
+  VocabularyItem,
+  GrammarTopic,
+  Permission,
+  CreateCollectionData,
+  CreateLearningSetData,
+  CreateVocabularyData,
+  CreateGrammarData
+};

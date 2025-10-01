@@ -146,21 +146,28 @@ class LearningSetBase(BaseModel):
     subject: Optional[str] = Field(None, max_length=50)
 
 class LearningSetCreate(LearningSetBase):
-    collection_id: str
+    collection_ids: Optional[List[str]] = []
 
 class LearningSetUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
-    collection_id: Optional[str] = None
+    collection_ids: Optional[List[str]] = None
     grade_level: Optional[str] = Field(None, max_length=20)
     subject: Optional[str] = Field(None, max_length=50)
 
 class LearningSetResponse(LearningSetBase, BaseResponse):
-    collection_id: str
+    collection_ids: Optional[List[str]] = []
     created_by: str
     vocabulary_items: Optional[List[VocabularyItemResponse]] = []
     grammar_topics: Optional[List[GrammarTopicResponse]] = []
     model_config = ConfigDict(from_attributes=True)
+    
+    @model_validator(mode='before')
+    @classmethod
+    def extract_collection_ids(cls, data: Any) -> Any:
+        if hasattr(data, 'collections'):
+            data.collection_ids = [c.id for c in data.collections] if data.collections else []
+        return data
 
 # Class models
 class ClassBase(BaseModel):

@@ -7,6 +7,7 @@ import { AuthPage } from './pages/AuthPage';
 import { ContentPage } from './pages/ContentPage';
 import { CollaborationPage } from './pages/CollaborationPage';
 import DashboardPage from './pages/DashboardPage';
+import ChatPage from './pages/ChatPage';
 import { ProfileForm } from './components/auth/ProfileForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
@@ -73,6 +74,15 @@ function App() {
                 element={
                   <ProtectedRouteWithLayout>
                     <CollaborationPage />
+                  </ProtectedRouteWithLayout>
+                }
+              />
+              
+              <Route
+                path="/chat"
+                element={
+                  <ProtectedRouteWithLayout>
+                    <ChatPage />
                   </ProtectedRouteWithLayout>
                 }
               />

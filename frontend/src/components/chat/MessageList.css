@@ -1,0 +1,155 @@
+/* Message list styles */
+
+.message-list-container {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.message-list {
+  flex: 1;
+  padding: 1rem;
+}
+
+.messages-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 100%;
+}
+
+/* Load more button */
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.load-more-button {
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.load-more-button:hover:not(:disabled) {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.load-more-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading indicator */
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.loading-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--border-color);
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.875rem;
+  max-width: 300px;
+}
+
+/* Animations */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Focus states for accessibility */
+.load-more-button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .message-list {
+    padding: 0.75rem;
+  }
+  
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+  
+  .empty-state-icon {
+    font-size: 2.5rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .load-more-button {
+    background: var(--surface-dark);
+    border-color: var(--border-dark);
+    color: var(--text-secondary-dark);
+  }
+  
+  .load-more-button:hover:not(:disabled) {
+    background: var(--primary-dark);
+    color: var(--primary-light);
+    border-color: var(--primary-light);
+  }
+  
+  .loading-spinner {
+    border-color: var(--border-dark);
+    border-top-color: var(--primary-light);
+  }
+  
+  .empty-state {
+    color: var(--text-secondary-dark);
+  }
+  
+  .empty-state h3 {
+    color: var(--text-primary-dark);
+  }
+}

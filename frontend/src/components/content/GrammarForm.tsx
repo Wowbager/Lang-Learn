@@ -3,6 +3,25 @@
  */
 
 import React, { useState } from 'react';
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  CircularProgress,
+  Alert,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper,
+  IconButton,
+  Chip,
+  Grid,
+} from '@mui/material';
+import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { SelectChangeEvent } from '@mui/material/Select';
 import { contentService, GrammarTopic, CreateGrammarData } from '../../services/contentService';
 
 interface GrammarFormProps {
@@ -16,15 +35,15 @@ export const GrammarForm: React.FC<GrammarFormProps> = ({
   grammar,
   learningSetId,
   onSave,
-  onCancel
+  onCancel,
 }) => {
   const [formData, setFormData] = useState<CreateGrammarData>({
     name: grammar?.name || '',
     description: grammar?.description || '',
     rule_explanation: grammar?.rule_explanation || '',
     examples: grammar?.examples || [],
-    difficulty: grammar?.difficulty || 'beginner',
-    learning_set_id: learningSetId
+    difficulty: grammar?.difficulty || 'BEGINNER',
+    learning_set_id: learningSetId,
   });
   const [newExample, setNewExample] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,7 +51,7 @@ export const GrammarForm: React.FC<GrammarFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       setError('Grammar topic name is required');
       return;
@@ -46,14 +65,14 @@ export const GrammarForm: React.FC<GrammarFormProps> = ({
     try {
       setLoading(true);
       setError(null);
-      
+
       let savedGrammar: GrammarTopic;
       if (grammar) {
         savedGrammar = await contentService.updateGrammar(grammar.id, formData);
       } else {
         savedGrammar = await contentService.createGrammar(formData);
       }
-      
+
       onSave(savedGrammar);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save grammar topic');
@@ -62,10 +81,19 @@ export const GrammarForm: React.FC<GrammarFormProps> = ({
     }
   };
 
-  const handleChange = (field: keyof CreateGrammarData, value: any) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [name]: value,
+    }));
+  };
+
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
     }));
   };
 
@@ -73,7 +101,7 @@ export const GrammarForm: React.FC<GrammarFormProps> = ({
     if (newExample.trim()) {
       setFormData(prev => ({
         ...prev,
-        examples: [...(prev.examples || []), newExample.trim()]
+        examples: [...(prev.examples || []), newExample.trim()],
       }));
       setNewExample('');
     }
@@ -82,7 +110,7 @@ export const GrammarForm: React.FC<GrammarFormProps> = ({
   const removeExample = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      examples: prev.examples?.filter((_, i) => i !== index) || []
+      examples: prev.examples?.filter((_, i) => i !== index) || [],
     }));
   };
 
@@ -94,152 +122,144 @@ export const GrammarForm: React.FC<GrammarFormProps> = ({
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg border">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">
+    <Paper elevation={2} sx={{ p: 3, mt: 2 }}>
+      <Typography variant="h6" component="h3" sx={{ mb: 3 }}>
         {grammar ? 'Edit Grammar Topic' : 'Add New Grammar Topic'}
-      </h3>
+      </Typography>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Name */}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Topic Name *
-            </label>
-            <input
-              type="text"
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="e.g., Present Perfect Tense"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+      <form onSubmit={handleSubmit}>
+        <Stack spacing={3}>
+          <Grid container spacing={2}>
+            {/* Name */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                id="name"
+                name="name"
+                label="Topic Name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="e.g., Present Perfect Tense"
+                fullWidth
+                required
+                variant="outlined"
+              />
+            </Grid>
 
-          {/* Difficulty */}
-          <div>
-            <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1">
-              Difficulty Level *
-            </label>
-            <select
-              id="difficulty"
-              value={formData.difficulty}
-              onChange={(e) => handleChange('difficulty', e.target.value as 'beginner' | 'intermediate' | 'advanced')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </div>
-        </div>
+            {/* Difficulty */}
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth variant="outlined" required>
+                <InputLabel id="difficulty-label">Difficulty Level</InputLabel>
+                <Select
+                  labelId="difficulty-label"
+                  id="difficulty"
+                  name="difficulty"
+                  value={formData.difficulty}
+                  onChange={handleSelectChange}
+                  label="Difficulty Level"
+                >
+                  <MenuItem value="beginner">Beginner</MenuItem>
+                  <MenuItem value="intermediate">Intermediate</MenuItem>
+                  <MenuItem value="advanced">Advanced</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
 
-        {/* Description */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-            Description *
-          </label>
-          <textarea
+          {/* Description */}
+          <TextField
             id="description"
+            name="description"
+            label="Description"
             value={formData.description}
-            onChange={(e) => handleChange('description', e.target.value)}
+            onChange={handleInputChange}
             placeholder="Describe this grammar topic"
+            multiline
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            fullWidth
             required
+            variant="outlined"
           />
-        </div>
 
-        {/* Rule Explanation */}
-        <div>
-          <label htmlFor="rule_explanation" className="block text-sm font-medium text-gray-700 mb-1">
-            Rule Explanation
-          </label>
-          <textarea
+          {/* Rule Explanation */}
+          <TextField
             id="rule_explanation"
+            name="rule_explanation"
+            label="Rule Explanation"
             value={formData.rule_explanation}
-            onChange={(e) => handleChange('rule_explanation', e.target.value)}
+            onChange={handleInputChange}
             placeholder="Explain the grammar rule in detail"
+            multiline
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            fullWidth
+            variant="outlined"
           />
-        </div>
 
-        {/* Examples */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Examples
-          </label>
-          
-          {/* Add new example */}
-          <div className="flex space-x-2 mb-3">
-            <input
-              type="text"
-              value={newExample}
-              onChange={(e) => setNewExample(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Enter an example sentence"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="button"
-              onClick={addExample}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              Add
-            </button>
-          </div>
+          {/* Examples */}
+          <Box>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Examples
+            </Typography>
+            
+            {/* Add new example */}
+            <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+              <TextField
+                value={newExample}
+                onChange={(e) => setNewExample(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Enter an example sentence"
+                fullWidth
+                variant="outlined"
+                size="small"
+              />
+              <Button
+                variant="contained"
+                color="success"
+                onClick={addExample}
+                startIcon={<AddIcon />}
+              >
+                Add
+              </Button>
+            </Stack>
 
-          {/* Existing examples */}
-          {formData.examples && formData.examples.length > 0 && (
-            <div className="space-y-2">
-              {formData.examples.map((example, index) => (
-                <div key={index} className="flex items-center space-x-2 bg-gray-50 p-2 rounded">
-                  <span className="flex-1 text-sm">{example}</span>
-                  <button
-                    type="button"
-                    onClick={() => removeExample(index)}
-                    className="text-red-600 hover:text-red-800 p-1"
-                    title="Remove example"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+            {/* Existing examples */}
+            <Stack spacing={1}>
+              {formData.examples?.map((example, index) => (
+                <Chip
+                  key={index}
+                  label={example}
+                  onDelete={() => removeExample(index)}
+                  deleteIcon={<DeleteIcon />}
+                  variant="outlined"
+                />
               ))}
-            </div>
-          )}
-        </div>
+            </Stack>
+          </Box>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
-            {error}
-          </div>
-        )}
+          {/* Error Message */}
+          {error && <Alert severity="error">{error}</Alert>}
 
-        {/* Buttons */}
-        <div className="flex space-x-3 pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Saving...' : (grammar ? 'Update' : 'Add')}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-        </div>
+          {/* Buttons */}
+          <Stack direction="row" spacing={2} sx={{ pt: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={24} /> : (grammar ? 'Update' : 'Add')}
+            </Button>
+            <Button
+              type="button"
+              variant="outlined"
+              color="secondary"
+              onClick={onCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          </Stack>
+        </Stack>
       </form>
-    </div>
+    </Paper>
   );
 };
